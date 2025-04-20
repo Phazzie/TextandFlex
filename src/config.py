@@ -11,6 +11,13 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 
+# Directory constants
+DATA_DIR = "data"
+EXPORT_DIR = "exports"
+
+# Analysis constants
+MAX_TOP_CONTACTS = 10
+
 # Default configuration values
 DEFAULT_CONFIG = {
     "logging": {
