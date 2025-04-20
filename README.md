@@ -1,4 +1,4 @@
-# TexttheNext
+# TextyMcTextface
 
 A Python application for analyzing text message records to extract insights about communication patterns and relationships.
 
@@ -16,8 +16,8 @@ A Python application for analyzing text message records to extract insights abou
 1. Clone the repository:
 
    ```
-   git clone https://github.com/Phazzie/TexttheNext.git
-   cd TexttheNext
+   git clone https://github.com/Phazzie/TextyMcTextface.git
+   cd TextyMcTextface
    ```
 
 2. Create a virtual environment and activate it:
