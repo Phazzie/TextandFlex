@@ -1,10 +1,10 @@
-# Phone Records Analyzer
+# TexttheNext
 
-A Python application for analyzing phone communication records to extract insights about communication patterns and relationships.
+A Python application for analyzing text message records to extract insights about communication patterns and relationships.
 
 ## Features
 
-- Parse Excel (.xlsx) files containing phone communication records
+- Parse Excel (.xlsx) files containing text message records
 - Analyze text message data for patterns and insights
 - Generate statistical reports on communication habits
 - Identify key contacts and communication patterns
@@ -14,12 +14,14 @@ A Python application for analyzing phone communication records to extract insigh
 ## Installation
 
 1. Clone the repository:
+
    ```
-   git clone https://github.com/yourusername/phone-records-analyzer.git
-   cd phone-records-analyzer
+   git clone https://github.com/Phazzie/TexttheNext.git
+   cd TexttheNext
    ```
 
 2. Create a virtual environment and activate it:
+
    ```
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
@@ -48,16 +50,19 @@ python -m src.app analyze path/to/your/phone_records.xlsx
 ### Examples
 
 Analyze a phone records file:
+
 ```
 python -m src.app analyze data/my_phone_records.xlsx
 ```
 
 Export analysis results to CSV:
+
 ```
 python -m src.app export --format csv --output results.csv
 ```
 
 Show basic statistics:
+
 ```
 python -m src.app stats
 ```
@@ -65,6 +70,7 @@ python -m src.app stats
 ## Data Format
 
 The application expects Excel files with the following columns:
+
 - `timestamp`: Date and time of the communication
 - `phone_number`: The contact's phone number
 - `message_type`: Type of message (sent/received)
