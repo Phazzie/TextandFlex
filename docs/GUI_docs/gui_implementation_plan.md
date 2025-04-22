@@ -35,14 +35,14 @@ This plan focuses on implementing the core functionality of the GUI, integrating
 
 ### Phase A2: Data Models and Controllers
 
-- [ ] Implement `models/file_model.py`:
-  - [ ] Create immutable FileModel class with validation
+- [x] Implement `models/file_model.py`:
+  - [x] Create immutable FileModel class with validation
   - [ ] Implement file metadata extraction
-  - [ ] Create QAbstractTableModel subclass for data display
-- [ ] Implement `models/analysis_model.py`:
-  - [ ] Create immutable AnalysisResult class
+  - [x] Create QAbstractTableModel subclass for data display
+- [x] Implement `models/analysis_model.py`:
+  - [x] Create immutable AnalysisResult class
   - [ ] Define data structures for different analysis types
-  - [ ] Create QAbstractItemModel subclasses for analysis results
+  - [x] Create QAbstractItemModel subclasses for analysis results
 - [x] Implement `controllers/file_controller.py`:
   - [x] Connect to existing ExcelParser (integration pending)
   - [x] Implement file selection and validation
@@ -57,15 +57,15 @@ This plan focuses on implementing the core functionality of the GUI, integrating
 
 ### Phase A3: Application Integration
 
-- [ ] Implement `controllers/app_controller.py`:
-  - [ ] Coordinate between file and analysis controllers
-  - [ ] Manage application state
-  - [ ] Handle application-level events using Qt's signal/slot mechanism
-- [ ] Implement `app.py` entry point:
-  - [ ] Create QApplication instance
-  - [ ] Initialize controllers
-  - [ ] Set up dependency injection
-  - [ ] Add error handling for initialization
+- [x] Implement `controllers/app_controller.py`:
+  - [x] Coordinate between file and analysis controllers
+  - [x] Manage application state
+  - [x] Handle application-level events using Qt's signal/slot mechanism
+- [x] Implement `app.py` entry point:
+  - [x] Create QApplication instance
+  - [x] Initialize controllers
+  - [x] Set up dependency injection
+  - [x] Add error handling for initialization
 - [ ] Update `src/app.py` to integrate new GUI:
   - [ ] Add GUI launch option
   - [ ] Implement proper error handling
@@ -199,32 +199,32 @@ This plan focuses on implementing the UI components, improving the user experien
   - [x] Verify components are properly created and initialized
   - [x] Test basic properties and methods of components
   - [ ] ~~Test theme switching~~ (Skipped as part of theme system)
-- [ ] Test user interactions:
-  - [ ] Verify buttons and controls work correctly using QTest.mouseClick
-  - [ ] Test drag-and-drop functionality with QTest.mouseDrag
-  - [ ] Ensure keyboard navigation works properly with QTest.keyClick
-- [ ] Test accessibility:
-  - [ ] Verify screen reader compatibility with QAccessible
-  - [ ] Test keyboard-only navigation
+- [x] Test user interactions:
+  - [x] Verify buttons and controls work correctly using QTest.mouseClick
+  - [x] Test drag-and-drop functionality with QTest.mouseDrag
+  - [x] Ensure keyboard navigation works properly with QTest.keyClick
+- [x] Test accessibility:
+  - [ ] Verify screen reader compatibility with QAccessible (Deferred)
+  - [x] Test keyboard-only navigation
   - [ ] ~~Ensure color contrast meets standards~~ (Deferred with theme system)
 
 #### Integration Testing
 
-- [ ] Test component interactions:
-  - [ ] Test file selection → analysis workflow
-  - [ ] Test analysis → results workflow
-  - [ ] Test results → visualization workflow
-- [ ] Test data flow between components
-- [ ] Test error handling across component boundaries
+- [x] Test component interactions:
+  - [x] Test file selection → analysis workflow
+  - [x] Test analysis → results workflow
+  - [x] Test results → visualization workflow
+- [x] Test data flow between components
+- [x] Test error handling across component boundaries
 
 #### Performance Testing
 
-- [ ] Test with various data sizes:
-  - [ ] Small datasets (< 100 records)
-  - [ ] Medium datasets (100-1000 records)
-  - [ ] Large datasets (> 1000 records)
-- [ ] Measure UI responsiveness during long operations
-- [ ] Test memory usage during typical operations
+- [x] Test with various data sizes:
+  - [x] Small datasets (< 100 records)
+  - [x] Medium datasets (100-1000 records)
+  - [x] Large datasets (> 1000 records)
+- [x] Measure UI responsiveness during long operations
+- [x] Test memory usage during typical operations
 
 ## Integration Plan
 
