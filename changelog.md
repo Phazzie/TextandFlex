@@ -187,89 +187,70 @@
 - Interactive mode with command history and tab completion
 - Extensible command system for future features
 
-## [2025-04-22] GUI Core Functionality (Plan A)
+## [2025-04-22] GUI Core Functionality Milestone
 
 ### Added
 
-- Created new branch `new-gui-core-functionality` for GUI core work
-- Set up directory structure for controllers, models, utils, and app.py under src/presentation_layer/gui/
-- Installed PySide6 and added to requirements.txt
-- Implemented robust error handling system (severity levels, logging, sanitization, user dialogs)
-- Implemented file validation system (extension, size, path traversal, content/headers)
-- Added unit tests for error handling and file validation (pytest-qt)
-- Implemented FileController and AnalysisController with Qt signals/slots, background processing, and error handling
-- Added unit tests for FileController and AnalysisController
+- Completed implementation of immutable FileModel and AnalysisResult models with validation and Qt model subclasses
+- Implemented and tested AppController for application state management and event coordination
+- Created app.py entry point with robust error handling and dependency injection
+- All core controllers and models now have comprehensive unit tests (pytest, pytest-qt)
 
 ### Changed
 
-- Updated implementation plan and checklist to reflect completed core infrastructure and controller work
+- Updated gui_implementation_plan.md checklist to reflect completed models, controllers, and app entry point
 
 ### Next
 
-- Scaffold AppController, data models, and integration points
-- Document interface contracts for UI team
-- Continue QA and integration testing
+- Integrate GUI launch option in app.py
+- Update CLI to support GUI launch
+- Begin interface contract documentation for UI integration
 
-## [2025-04-22] GUI UI Components and User Experience (Plan B)
+## [2025-04-22] GUI Launch Integration
 
 ### Added
 
-- Created new branch `new-gui-ui-components` for UI components work
-- Set up directory structure for views, ui, resources, stylesheets, and widgets under src/presentation_layer/gui/
-- Implemented UI constants in stylesheets/constants.py (colors, dimensions, typography, animation, z-index)
-- Implemented UI conversion utilities in ui/ui_converter.py for Qt Designer integration
-- Implemented resource compilation utilities in resources/resource_compiler.py
-- Implemented core UI components:
-  - MainWindow with menu, toolbar, and status bar
-  - FileView with drag-and-drop support
-  - AnalysisView with options and progress tracking
-  - ResultsView with sorting, filtering, and pagination
-  - VisualizationView with matplotlib integration
-- Implemented custom widgets:
-  - DataTableWidget with enhanced features
-- Added basic test suite for UI components (pytest-qt)
-- Created run_gui.py script for launching the application
-
-### Changed
-
-- Updated requirements.txt to include PySide6 and pytest-qt
-- Enhanced app.py to integrate all UI components
-- Updated implementation plan to remove theme system requirements
-
-### Features
-
-- Modern, responsive UI with proper layout management
-- File selection with drag-and-drop support
-- Analysis options with progress tracking
-- Results display with sorting, filtering, and pagination
-- Data visualization with matplotlib integration
-- Proper error handling and user feedback
+- Integrated new PySide6 GUI launch option into src/app.py and CLI (src/cli/commands.py)
+- Updated CLI help text to reflect new GUI framework
+- Checklist in gui_implementation_plan.md updated for completed integration steps
 
 ### Next
 
-- Expand test coverage for UI components
-- Implement integration tests for component interactions
-- Add accessibility features
-- Create user onboarding experience (if required)
+- Test CLI 'gui' command to ensure new GUI launches correctly
+- Begin interface contract and signal/slot documentation for UI integration
 
-## [2025-04-22] GUI Testing Implementation
+## [2025-04-25] GUI UI Components Implementation
 
 ### Added
 
-- Expanded test suite for UI components:
-  - Unit tests for all view components
+- Implemented MainWindow with menu, toolbar, and status bar
+- Created FileView with drag-and-drop support and file validation
+- Implemented AnalysisView with analysis options and progress tracking
+- Developed ResultsView with sorting, filtering, and pagination
+- Created VisualizationView with matplotlib integration for charts
+- Implemented custom widgets like DataTableWidget for data display
+- Added comprehensive test suite for all UI components:
+  - Basic unit tests for component functionality
+  - Interaction tests for user interactions
   - Integration tests for component interactions
+  - Accessibility tests for keyboard navigation and tooltips
   - Performance tests for large datasets
-- Implemented test fixtures for common testing scenarios
-- Added mock controllers for testing UI components in isolation
 
 ### Changed
 
-- Updated QA plan to focus on functionality and integration testing
-- Removed theme-related testing requirements
+- Updated gui_implementation_plan.md checklist to reflect completed UI components
+- Enhanced error handling in UI components with user-friendly messages
+- Improved accessibility with keyboard navigation and tooltips
 
-### Features
+### Fixed
 
-- Comprehensive test coverage for UI components
-- Automated testing for UI interactions
-- Performance testing for different data sizes
+- Fixed focus handling in keyboard navigation tests
+- Resolved issues with file handling in test mode
+- Fixed Qt import statements for better compatibility
+- Addressed recursive dependencies in test fixtures
+
+### Next
+
+- Integrate UI components with core controllers
+- Implement proper error handling for controller interactions
+- Create user documentation for the new GUI
