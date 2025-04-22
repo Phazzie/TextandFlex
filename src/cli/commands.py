@@ -25,6 +25,12 @@ class ExportCommand(Command):
         print(f"Exporting file: {self.file_path} to format: {self.format}")
         # Add export logic here
 
+class GuiCommand(Command):
+    """Command to launch the Kivy GUI."""
+    def execute(self):
+        from src.presentation_layer.gui.main_window import MainApp
+        MainApp().run()
+
 class CommandParser:
     """Parser for CLI commands."""
     def __init__(self):
@@ -40,11 +46,16 @@ class CommandParser:
         export_parser.add_argument("file_path", type=str, help="Path to the phone records file")
         export_parser.add_argument("--format", type=str, choices=["csv", "json"], default="csv", help="Export format")
 
+        # GUI command
+        gui_parser = self.subparsers.add_parser("gui", help="Launch the Kivy GUI")
+
     def parse(self, args: List[str]) -> Command:
         parsed_args = self.parser.parse_args(args)
         if parsed_args.command == "analyze":
             return AnalyzeCommand(parsed_args.file_path)
         elif parsed_args.command == "export":
             return ExportCommand(parsed_args.file_path, parsed_args.format)
+        elif parsed_args.command == "gui":
+            return GuiCommand()
         else:
             raise ValueError(f"Unknown command: {parsed_args.command}")

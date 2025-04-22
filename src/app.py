@@ -13,7 +13,7 @@ from .data_layer.repository import PhoneRecordRepository
 from .analysis_layer.basic_statistics import BasicStatisticsAnalyzer
 from .logger import app_logger as logger
 from .config import ConfigManager
-from .cli.commands import CommandParser, AnalyzeCommand, ExportCommand
+from .cli.commands import CommandParser, AnalyzeCommand, ExportCommand, GuiCommand
 
 def main():
     """Main application entry point."""
@@ -36,6 +36,8 @@ def main():
         analyze_file(command.file_path, parser, repository, analyzer)
     elif isinstance(command, ExportCommand):
         export_file(command.file_path, command.format, repository)
+    elif isinstance(command, GuiCommand):
+        launch_gui()
     else:
         logger.error(f"Unknown command: {command}")
         return 1
@@ -80,6 +82,11 @@ def export_file(file_path: str, format: str, repository: PhoneRecordRepository):
     """Export analysis results to a file."""
     logger.info(f"Exporting file: {file_path} to format: {format}")
     # Add export logic here
+
+def launch_gui():
+    """Launch the Kivy GUI."""
+    from .presentation_layer.gui.main_window import MainApp
+    MainApp().run()
 
 if __name__ == "__main__":
     main()
