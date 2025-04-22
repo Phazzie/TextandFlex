@@ -25,6 +25,22 @@ class ExportCommand(Command):
         print(f"Exporting file: {self.file_path} to format: {self.format}")
         # Add export logic here
 
+class GuiCommand(Command):
+    """Command to launch the new PySide6 GUI."""
+    def __init__(self, theme: Optional[str] = None, debug: bool = False):
+        self.theme = theme
+        self.debug = debug
+
+    def execute(self):
+        """Execute the GUI command."""
+        from src.app import launch_gui
+        print("Launching PySide6 GUI...")
+        if self.debug:
+            print("Debug mode enabled. Additional logging will be shown.")
+        if self.theme:
+            print(f"Theme set to: {self.theme}")
+        launch_gui()
+
 class CommandParser:
     """Parser for CLI commands."""
     def __init__(self):
@@ -40,11 +56,19 @@ class CommandParser:
         export_parser.add_argument("file_path", type=str, help="Path to the phone records file")
         export_parser.add_argument("--format", type=str, choices=["csv", "json"], default="csv", help="Export format")
 
+        # GUI command
+        gui_parser = self.subparsers.add_parser("gui", help="Launch the PySide6 GUI")
+        gui_parser.add_argument("--theme", type=str, choices=["light", "dark", "system"],
+                              help="Set the GUI theme (light, dark, or system)")
+        gui_parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+
     def parse(self, args: List[str]) -> Command:
         parsed_args = self.parser.parse_args(args)
         if parsed_args.command == "analyze":
             return AnalyzeCommand(parsed_args.file_path)
         elif parsed_args.command == "export":
             return ExportCommand(parsed_args.file_path, parsed_args.format)
+        elif parsed_args.command == "gui":
+            return GuiCommand(theme=parsed_args.theme, debug=parsed_args.debug)
         else:
             raise ValueError(f"Unknown command: {parsed_args.command}")
