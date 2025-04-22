@@ -93,27 +93,27 @@ This plan focuses on implementing the core functionality of the GUI, integrating
 
 #### Integration Testing
 
-- [ ] Test file selection → analysis → results flow:
-  - [ ] Verify file selection triggers appropriate signals
-  - [ ] Ensure analysis is performed correctly in background threads
-  - [ ] Validate results are properly transformed and displayed in models
-- [ ] Test error propagation:
-  - [ ] Verify file errors are properly handled
-  - [ ] Test analysis errors are correctly reported
-  - [ ] Ensure application recovers from errors
-- [ ] Test application state management:
-  - [ ] Verify state transitions are correct
-  - [ ] Ensure state is properly shared between components
+- [x] Test file selection → analysis → results flow:
+  - [x] Verify file selection triggers appropriate signals
+  - [x] Ensure analysis is performed correctly in background threads
+  - [x] Validate results are properly transformed and displayed in models
+- [x] Test error propagation:
+  - [x] Verify file errors are properly handled
+  - [x] Test analysis errors are correctly reported
+  - [x] Ensure application recovers from errors
+- [x] Test application state management:
+  - [x] Verify state transitions are correct
+  - [x] Ensure state is properly shared between components
 
 #### Performance Testing
 
-- [ ] Test with various file sizes:
-  - [ ] Small files (< 1MB)
-  - [ ] Medium files (1-5MB)
-  - [ ] Large files (5-10MB)
-- [ ] Measure memory usage during operations
-- [ ] Verify UI responsiveness during long operations
-- [ ] Test background thread performance for analysis tasks
+- [x] Test with various file sizes:
+  - [x] Small files (< 1MB)
+  - [x] Medium files (1-5MB)
+  - [x] Large files (5-10MB)
+- [x] Measure memory usage during operations
+- [x] Verify UI responsiveness during long operations
+- [x] Test background thread performance for analysis tasks
 
 ## Plan B: UI Components and User Experience
 
@@ -228,7 +228,23 @@ This plan focuses on implementing the UI components, improving the user experien
 
 ## Integration Plan
 
-### Phase I1: Preparation and Interface Definition
+- [ ] Define integration test coverage requirements (minimum 80%)
+
+### Phase I2: Incremental Integration
+
+- [ ] Create new integration branch `new-gui-integration` from `new-gui-core-functionality`
+- [ ] Implement integration in small, testable increments:
+
+  1. [ ] Integrate file selection components first
+     - [ ] Connect FileController to FileView
+     - [ ] Test file selection end-to-end
+     - [ ] Verify error handling across boundaries
+  2. [ ] Integrate analysis components next
+     - [ ] Connect AnalysisController to AnalysisView
+     - [ ] Test analysis workflow end-to-end
+     - [ ] Verify progress reporting works correctly
+  3. [ ] Integrate results display components
+     - [ ] Connect analysis results models to ResultsView### Phase I1: Preparation and Interface Definition
 
 - [ ] Create interface contracts between Plan A and Plan B components:
 
@@ -240,24 +256,8 @@ This plan focuses on implementing the UI components, improving the user experien
 - [ ] Establish integration testing framework:
   - [ ] Set up CI pipeline for integration tests
   - [ ] Create test fixtures for common scenarios
-  - [ ] Define integration test coverage requirements (minimum 80%)
-
-### Phase I2: Incremental Integration
-
-- [ ] Create new integration branch `new-gui-integration` from `new-gui-core-functionality`
-- [ ] Implement integration in small, testable increments:
-  1. [ ] Integrate file selection components first
-     - [ ] Connect FileController to FileView
-     - [ ] Test file selection end-to-end
-     - [ ] Verify error handling across boundaries
-  2. [ ] Integrate analysis components next
-     - [ ] Connect AnalysisController to AnalysisView
-     - [ ] Test analysis workflow end-to-end
-     - [ ] Verify progress reporting works correctly
-  3. [ ] Integrate results display components
-     - [ ] Connect analysis results models to ResultsView
-     - [ ] Test results display with various data types
-     - [ ] Verify pagination and filtering work correctly
+    - [ ] Test results display with various data types
+    - [ ] Verify pagination and filtering work correctly
   4. [ ] Integrate visualization components last
      - [ ] Connect visualization generation to VisualizationView
      - [ ] Test visualization display with various chart types
