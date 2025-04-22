@@ -26,6 +26,8 @@
 - Fixed file validator to make `message_content` column optional
 - Updated file validator to use local validators instead of phone_analyzer imports
 - Improved error handling in file validator with proper exception chaining
+- Enhanced ML models to handle missing `message_content` and `message_length` columns
+- Improved robustness of feature extraction for ML models
 
 ## [Unreleased]
 

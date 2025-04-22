@@ -37,12 +37,12 @@ try:
     from sklearn.ensemble import IsolationForest, RandomForestRegressor
     from sklearn.cluster import KMeans
     from sklearn.metrics import (
-        silhouette_score, 
-        accuracy_score, 
-        mean_squared_error, 
-        r2_score, 
-        precision_score, 
-        recall_score, 
+        silhouette_score,
+        accuracy_score,
+        mean_squared_error,
+        r2_score,
+        precision_score,
+        recall_score,
         f1_score
     )
     from sklearn.preprocessing import StandardScaler
@@ -66,6 +66,8 @@ DEFAULT_COLUMN_MAPPING = {
     'timestamp': 'Timestamp',
     'contact': 'Contact',
     'message_length': 'MessageLength',
+    'message_content': 'MessageContent',
+    'phone_number': 'To/From',
     # Add other columns if needed by features
 }
 
@@ -112,19 +114,19 @@ class MLModel:
             self._last_error = str(exception)
             self._is_trained = False
             return False
-            
+
     def train_batched(self, features_iterator, labels_iterator=None,
                      batch_size=5000, progress_callback=None):
         """
         Train the model using batched data to handle large datasets efficiently.
-        
+
         Args:
             features_iterator: Iterator yielding feature DataFrames or a DataFrame
             labels_iterator: Optional iterator yielding label Series or a Series
             batch_size: Size of batches to process (if input is not already batched)
-            progress_callback: Optional function(progress_float, status_message) 
+            progress_callback: Optional function(progress_float, status_message)
                                to report progress
-        
+
         Returns:
             bool: True if training succeeded, False otherwise
         """
@@ -135,16 +137,16 @@ class MLModel:
                 for i in range(0, total_rows, batch_size):
                     yield features_iterator.iloc[i:i+batch_size]
             features_iterator = feature_batch_gen()
-            
+
             if isinstance(labels_iterator, pd.Series):
                 def label_batch_gen():
                     for i in range(0, total_rows, batch_size):
                         yield labels_iterator.iloc[i:i+batch_size]
                 labels_iterator = label_batch_gen()
-        
+
         # Determine if the model supports incremental learning
         supports_partial = self._supports_partial_fit
-        
+
         if not supports_partial:
             # Fallback to collecting all data and training at once
             try:
@@ -153,16 +155,16 @@ class MLModel:
                 total_rows = 0
                 start_time = time.time()
                 batch_count = 0
-                
+
                 # Collect all data from iterators
                 for batch in features_iterator:
                     if batch.empty:
                         continue
-                    
+
                     all_features.append(batch)
                     total_rows += len(batch)
                     batch_count += 1
-                    
+
                     if labels_iterator:
                         try:
                             label_batch = next(labels_iterator)
@@ -170,33 +172,33 @@ class MLModel:
                         except StopIteration:
                             logger.warning("Labels iterator exhausted before features.")
                             break
-                    
+
                     if progress_callback:
                         # We can't know the total size, report based on batches
                         msg = f"Collected batch {batch_count}, {total_rows} rows total"
                         progress = 0.5 * (batch_count / (batch_count + 1))
                         progress_callback(progress, msg)
-                
+
                 # Combine all batches
                 if all_features:
                     combined_features = pd.concat(all_features)
                     combined_labels = pd.concat(all_labels) if all_labels else None
-                    
+
                     if progress_callback:
                         progress_callback(0.5, f"Training on {len(combined_features)} total rows")
-                    
+
                     # Train on the combined dataset
                     if not combined_features.empty:
                         success = self.train(combined_features, combined_labels)
                         if progress_callback:
                             progress_callback(1.0, "Training complete")
                         return success
-                
+
                 logger.warning("No data collected for training")
                 if progress_callback:
                     progress_callback(1.0, "No data to train on")
                 return False
-                
+
             except Exception as exc:
                 logger.error(f"Error in batched training: {exc}")
                 self._last_error = str(exc)
@@ -209,31 +211,31 @@ class MLModel:
                 processed_batches = 0
                 start_time = time.time()
                 has_labels = labels_iterator is not None
-                
+
                 # Initialize with first batch to setup the model
                 initialized = False
-                
+
                 for feature_batch in features_iterator:
                     if feature_batch.empty:
                         continue
-                    
+
                     label_batch = None
                     if has_labels:
                         try:
                             label_batch = next(labels_iterator)
                         except StopIteration:
                             has_labels = False
-                    
+
                     # On first batch, initialize the model
                     if not initialized:
                         self._init_partial_fit(feature_batch, label_batch)
                         initialized = True
-                    
+
                     # Perform incremental fit
                     self._partial_fit(feature_batch, label_batch)
-                    
+
                     processed_batches += 1
-                    
+
                     # Report progress
                     if progress_callback:
                         elapsed = time.time() - start_time
@@ -245,13 +247,13 @@ class MLModel:
                         else:
                             progress = 0.1
                             msg = f"Processed batch {processed_batches}"
-                        
+
                         progress_callback(min(0.99, progress), msg)
-                    
+
                     # Clear memory occasionally
                     if processed_batches % 10 == 0:
                         gc.collect()
-                
+
                 if processed_batches > 0:
                     self._is_trained = True
                     if progress_callback:
@@ -263,7 +265,7 @@ class MLModel:
                     if progress_callback:
                         progress_callback(1.0, "No data to train on")
                     return False
-                    
+
             except Exception as exc:
                 logger.error(f"Error during incremental training: {exc}")
                 self._last_error = str(exc)
@@ -424,7 +426,7 @@ class TimePatternModel(MLModel):
 
         # Use time-related features
         time_features = features.copy()
-        
+
         # Create the model with reasonable defaults
         self.model = RandomForestRegressor(
             n_estimators=100,
@@ -432,7 +434,7 @@ class TimePatternModel(MLModel):
             random_state=42,
             n_jobs=-1  # Use all available cores
         )
-        
+
         # Train the model
         self.model.fit(time_features, labels)
         logger.info("TimePatternModel trained using RandomForestRegressor.")
@@ -463,7 +465,7 @@ class TimePatternModel(MLModel):
 
         # Make predictions
         predictions = self.predict(test_features)
-        
+
         # Calculate regression metrics
         metrics = {
             'mean_squared_error': mean_squared_error(test_labels, predictions),
@@ -473,7 +475,7 @@ class TimePatternModel(MLModel):
                 self.model.feature_importances_
             ))
         }
-        
+
         return metrics
 
 
@@ -492,11 +494,17 @@ class ContactPatternModel(MLModel):
     def _train_model(self, features: pd.DataFrame, labels: pd.Series = None):
         if not SKLEARN_AVAILABLE:
             raise ImportError("scikit-learn is required for ContactPatternModel but is not installed.")
-        if features.empty or 'message_length' not in features.columns:
-            logger.warning("ContactPatternModel training skipped: No 'message_length' feature.")
+        if features.empty:
+            logger.warning("ContactPatternModel training skipped: Empty features.")
             self.model = None
             self._is_trained = False
             return
+
+        # Ensure message_length exists (should be added by extract_features)
+        if 'message_length' not in features.columns:
+            logger.warning("ContactPatternModel: Adding missing 'message_length' feature with default value 0.")
+            features['message_length'] = 0
+
         contact_features = features[['message_length']].copy()
         scaler = StandardScaler()
         scaled_features = scaler.fit_transform(contact_features)
@@ -509,9 +517,16 @@ class ContactPatternModel(MLModel):
     def _predict_model(self, features: pd.DataFrame) -> Any:
         if not SKLEARN_AVAILABLE:
             raise ImportError("scikit-learn is required for ContactPatternModel but is not installed.")
-        if self.model is None or features.empty or 'message_length' not in features.columns:
-            logger.warning("ContactPatternModel prediction skipped: Model not trained or no 'message_length' feature.")
+        if self.model is None or features.empty:
+            logger.warning("ContactPatternModel prediction skipped: Model not trained or empty features.")
             return pd.Series(dtype=int)
+
+        # Ensure message_length exists
+        if 'message_length' not in features.columns:
+            logger.warning("ContactPatternModel: Adding missing 'message_length' feature with default value 0.")
+            features = features.copy()
+            features['message_length'] = 0
+
         contact_features = features[['message_length']].copy()
         scaled_features = self.model['scaler'].transform(contact_features)
         preds = self.model['kmeans'].predict(scaled_features)
@@ -520,9 +535,16 @@ class ContactPatternModel(MLModel):
     def _evaluate_model(self, test_features: pd.DataFrame, test_labels: pd.Series = None) -> Dict[str, float]:
         if not SKLEARN_AVAILABLE:
             raise ImportError("scikit-learn is required for ContactPatternModel but is not installed.")
-        if self.model is None or test_features.empty or 'message_length' not in test_features.columns:
-            logger.warning("ContactPatternModel evaluation skipped: Model not trained or no 'message_length' feature.")
+        if self.model is None or test_features.empty:
+            logger.warning("ContactPatternModel evaluation skipped: Model not trained or empty features.")
             return {}
+
+        # Ensure message_length exists
+        if 'message_length' not in test_features.columns:
+            logger.warning("ContactPatternModel: Adding missing 'message_length' feature with default value 0.")
+            test_features = test_features.copy()
+            test_features['message_length'] = 0
+
         contact_features = test_features[['message_length']].copy()
         scaled_features = self.model['scaler'].transform(contact_features)
         if len(scaled_features) < 2:
@@ -564,11 +586,11 @@ class AnomalyDetectionModel(MLModel):
             raise ImportError("scikit-learn is required for AnomalyDetectionModel but is not installed.")
         if features.empty:
             raise ValueError("Cannot initialize model with empty features")
-            
+
         # Initialize the scaler with the first batch of data
         self._scaler = StandardScaler()
         self._scaler.fit(features)
-        
+
         # Create the IsolationForest model
         self._isolation_forest = IsolationForest(
             n_estimators=100,
@@ -577,17 +599,17 @@ class AnomalyDetectionModel(MLModel):
             random_state=42,
             n_jobs=-1
         )
-        
+
         # Perform the first partial fit
         scaled_features = self._scaler.transform(features)
         self._isolation_forest.fit(scaled_features)
-        
+
         # Store in the model dict
         self.model = {
             "isolation_forest": self._isolation_forest,
             "scaler": self._scaler
         }
-        
+
         logger.info("AnomalyDetectionModel initialized for incremental learning")
 
     def _partial_fit(self, features: pd.DataFrame, labels: pd.Series = None):
@@ -596,22 +618,22 @@ class AnomalyDetectionModel(MLModel):
             raise ImportError("scikit-learn is required for AnomalyDetectionModel but is not installed.")
         if self.model is None:
             raise ValueError("Model not initialized. Call _init_partial_fit first.")
-        
+
         if features.empty:
             logger.warning("Skipping empty batch in partial_fit")
             return
-            
+
         # Get existing model components
         isolation_forest = self.model["isolation_forest"]
         scaler = self.model["scaler"]
-        
+
         # Scale features with the existing scaler
         scaled_features = scaler.transform(features)
-        
+
         # For IsolationForest which doesn't natively support partial_fit, we have two options:
         # 1. Train a separate forest and combine estimators (faster but less accurate)
         # 2. Retain a subset of original data and retrain (slower but more accurate)
-        
+
         # Option 1: Train a new forest on this batch and combine estimators
         batch_forest = IsolationForest(
             n_estimators=max(10, isolation_forest.n_estimators // 5),  # Proportional to main forest
@@ -621,27 +643,27 @@ class AnomalyDetectionModel(MLModel):
             n_jobs=-1
         )
         batch_forest.fit(scaled_features)
-        
+
         # Update the estimators
         original_n_estimators = isolation_forest.n_estimators
         batch_n_estimators = batch_forest.n_estimators
-        
+
         # Add the new estimators to the existing ones
         isolation_forest.estimators_ += batch_forest.estimators_
         isolation_forest.estimators_samples_ += batch_forest.estimators_samples_
-        
+
         # Update total estimator count and recalculate offsets
         isolation_forest.n_estimators = original_n_estimators + batch_n_estimators
-        
+
         # For more accurate anomaly threshold, we could recalculate:
         # if hasattr(isolation_forest, '_compute_score_samples'):
         #    isolation_forest.offset_ = isolation_forest._compute_score_samples(...)
-        
+
         # Update the stored model
         self.model.update({
             "isolation_forest": isolation_forest
         })
-        
+
         self._is_trained = True
         logger.debug(f"Partial fit completed with {len(features)} samples, forest now has {isolation_forest.n_estimators} trees")
 
@@ -656,11 +678,11 @@ class AnomalyDetectionModel(MLModel):
 
         # Make a copy of features to avoid modifying the original
         anomaly_features = features.copy()
-        
+
         # Apply standard scaling for better anomaly detection
         scaler = StandardScaler()
         scaled_features = scaler.fit_transform(anomaly_features)
-        
+
         # Create the IsolationForest model with reasonable defaults
         # The 'contamination' parameter is an estimate of the proportion of outliers in the data
         isolation_forest = IsolationForest(
@@ -670,16 +692,16 @@ class AnomalyDetectionModel(MLModel):
             random_state=42,
             n_jobs=-1  # Use all available cores
         )
-        
+
         # Train the model
         isolation_forest.fit(scaled_features)
-        
+
         # Store both the model and scaler for prediction
         self.model = {
             "isolation_forest": isolation_forest,
             "scaler": scaler
         }
-        
+
         logger.info("AnomalyDetectionModel trained using IsolationForest.")
 
     def _predict_model(self, features: pd.DataFrame) -> Any:
@@ -691,10 +713,10 @@ class AnomalyDetectionModel(MLModel):
 
         # Scale the features
         scaled_features = self.model["scaler"].transform(features)
-        
+
         # Get predictions: 1 for inliers, -1 for outliers
         raw_predictions = self.model["isolation_forest"].predict(scaled_features)
-        
+
         # Convert predictions: -1 (anomaly) → 1 (flag it as anomaly), 1 (normal) → 0 (not anomaly)
         anomaly_flags = pd.Series(np.where(raw_predictions == -1, 1, 0), index=features.index)
         return anomaly_flags
@@ -708,32 +730,32 @@ class AnomalyDetectionModel(MLModel):
 
         # Get anomaly predictions
         anomaly_predictions = self.predict(test_features)
-        
+
         # Calculate basic statistics
         anomaly_count = anomaly_predictions.sum()
         total_samples = len(anomaly_predictions)
         anomaly_percentage = (anomaly_count / total_samples) * 100 if total_samples > 0 else 0
-        
+
         metrics = {
             "anomaly_count": float(anomaly_count),
             "total_samples": float(total_samples),
             "anomaly_percentage": float(anomaly_percentage)
         }
-        
+
         # If labeled data is provided (ground truth about anomalies), compute accuracy metrics
         if test_labels is not None and not test_labels.isnull().all() and len(test_labels) == len(anomaly_predictions):
             from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-            
+
             try:
                 # Check if labels are actually binary (0 or 1)
                 unique_values = test_labels.unique()
                 if not all(val in [0, 1] for val in unique_values if not pd.isna(val)):
                     logger.warning("Test labels must be binary (0 or 1) for anomaly detection evaluation. "
                                   f"Found values: {unique_values}. Converting to binary.")
-                
+
                 # Ensure test_labels are binary for metric calculation
                 binary_labels = test_labels.astype(bool).astype(int)
-                
+
                 metrics.update({
                     "accuracy": accuracy_score(binary_labels, anomaly_predictions),
                     "precision": precision_score(binary_labels, anomaly_predictions, zero_division=0),
@@ -742,7 +764,7 @@ class AnomalyDetectionModel(MLModel):
                 })
             except Exception as e:
                 logger.warning(f"Could not calculate accuracy metrics: {e}")
-        
+
         return metrics
 
 
@@ -775,6 +797,7 @@ def extract_features(df: pd.DataFrame, column_mapping: Dict = None) -> pd.DataFr
     try:
         ts_col = find_column('timestamp')
         len_col = find_column('message_length')
+
         # Extract time-based features
         if ts_col and ts_col in df_local.columns:
             df_local[ts_col] = pd.to_datetime(df_local[ts_col], errors='coerce')
@@ -784,11 +807,15 @@ def extract_features(df: pd.DataFrame, column_mapping: Dict = None) -> pd.DataFr
             features = features.dropna(subset=['hour', 'dayofweek', 'is_weekend'])
         else:
             logger.warning(f"Timestamp column '{ts_col}' not found in DataFrame. Time features skipped.")
+
         # Extract message length feature
         if len_col and len_col in df_local.columns:
+            # Use existing message_length column
             features['message_length'] = df_local.loc[features.index, len_col]
         else:
-            logger.warning(f"Message length column '{len_col}' not found. Length feature skipped.")
+            # Add a default message_length (we don't expect message_content)
+            logger.info("No message_length column found. Using default value of 0.")
+            features['message_length'] = 0
         # Convert all columns to int, drop rows with missing values
         for col in ['hour', 'dayofweek', 'is_weekend', 'message_length']:
             if col in features.columns:
@@ -807,7 +834,7 @@ def extract_features(df: pd.DataFrame, column_mapping: Dict = None) -> pd.DataFr
     return features
 
 
-def extract_features_batched(df_iterator, batch_size=5000, column_mapping=None, 
+def extract_features_batched(df_iterator, batch_size=5000, column_mapping=None,
                         progress_callback=None, num_workers=1):
     """
     Extract features for ML models from large datasets in batches to optimize memory usage.
@@ -829,18 +856,18 @@ def extract_features_batched(df_iterator, batch_size=5000, column_mapping=None,
     # Validate inputs
     if not isinstance(batch_size, int) or batch_size <= 0:
         raise ValueError("batch_size must be a positive integer")
-    
+
     if not isinstance(num_workers, int) or num_workers < 0:
         raise ValueError("num_workers must be a non-negative integer")
-    
+
     # If df_iterator is a DataFrame, convert it to a batched iterator
     if isinstance(df_iterator, pd.DataFrame):
         total_rows = len(df_iterator)
         if total_rows == 0:
             logger.warning("Empty DataFrame provided to extract_features_batched")
             return iter([])  # Return empty iterator
-            
-        batches = [(df_iterator.iloc[i:i+batch_size], i//batch_size, total_rows) 
+
+        batches = [(df_iterator.iloc[i:i+batch_size], i//batch_size, total_rows)
                   for i in range(0, total_rows, batch_size)]
         df_iterator = iter(batches)
         has_progress_info = True
@@ -850,25 +877,25 @@ def extract_features_batched(df_iterator, batch_size=5000, column_mapping=None,
             df_iterator = iter(df_iterator)
         except TypeError:
             raise TypeError("df_iterator must be a DataFrame or an iterable of DataFrames")
-            
+
         # If it's already an iterator, we don't know the total size upfront
         df_iterator = ((batch, idx, None) for idx, batch in enumerate(df_iterator))
         has_progress_info = False
-    
+
     # Process batches - either serially or in parallel
     processed_batches = 0
     total_processed_rows = 0
     start_time = time.time()
-    
+
     if num_workers <= 1:
         # Process serially
         for batch, batch_idx, total_rows in df_iterator:
             if batch.empty:
                 if progress_callback:
-                    progress_callback(processed_batches / (processed_batches + 1), 
+                    progress_callback(processed_batches / (processed_batches + 1),
                                     f"Processed {processed_batches} batches, {total_processed_rows} rows")
                 continue
-                
+
             # Extract features for this batch
             try:
                 features_batch = extract_features(batch, column_mapping)
@@ -877,12 +904,12 @@ def extract_features_batched(df_iterator, batch_size=5000, column_mapping=None,
             except Exception as e:
                 logger.error(f"Error extracting features from batch {batch_idx}: {e}")
                 features_batch = pd.DataFrame()  # Return empty DataFrame for this batch
-            
+
             # Report progress
             if progress_callback:
                 progress = (batch_idx + 1) / total_rows if has_progress_info and total_rows else 0.5
                 elapsed = time.time() - start_time
-                
+
                 if processed_batches > 1:
                     # If we have progress info, use it directly
                     if has_progress_info and total_rows:
@@ -890,17 +917,17 @@ def extract_features_batched(df_iterator, batch_size=5000, column_mapping=None,
                     else:
                         # Otherwise estimate based on processed batches
                         remaining = (elapsed / processed_batches) * processed_batches
-                    
+
                     msg = f"Batch {processed_batches}, {total_processed_rows} rows processed, ~{remaining:.1f}s remaining"
                 else:
                     msg = f"Batch {processed_batches}, {total_processed_rows} rows processed"
-                
+
                 progress_callback(min(0.99, progress), msg)
-            
+
             # Free memory
             if processed_batches % 10 == 0:
                 gc.collect()
-            
+
             # Only yield non-empty feature batches
             if not features_batch.empty:
                 yield features_batch
@@ -910,14 +937,14 @@ def extract_features_batched(df_iterator, batch_size=5000, column_mapping=None,
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
             # Process extract_features in parallel
             extract_fn = partial(extract_features, column_mapping=column_mapping)
-            
+
             # Submit all batches to the executor
             future_to_batch = {}
             for batch, batch_idx, total_rows in df_iterator:
                 if not batch.empty:
                     future = executor.submit(extract_fn, batch)
                     future_to_batch[future] = (batch_idx, len(batch))
-                
+
             # Collect results as they complete
             for future in concurrent.futures.as_completed(future_to_batch):
                 batch_idx, batch_size = future_to_batch[future]
@@ -926,31 +953,31 @@ def extract_features_batched(df_iterator, batch_size=5000, column_mapping=None,
                     if not features_batch.empty:
                         total_processed_rows += len(features_batch)
                         processed_batches += 1
-                    
+
                         # Report progress
                         if progress_callback:
                             progress = (batch_idx + 1) / total_rows if has_progress_info and total_rows else 0.5
-                            progress_callback(min(0.99, progress), 
+                            progress_callback(min(0.99, progress),
                                             f"Batch {processed_batches}, {total_processed_rows} rows processed")
-                        
+
                         yield features_batch
                 except Exception as e:
                     logger.error(f"Error processing batch {batch_idx}: {e}")
-                
+
                 # Free memory periodically
                 if processed_batches % 10 == 0:
                     gc.collect()
-    
+
     # Final progress update
     if progress_callback:
         progress_callback(1.0, f"Complete: {processed_batches} batches, {total_processed_rows} total rows")
 
 
-def process_dataset_with_progress(df, feature_extraction_fn=None, model_training_fn=None, 
+def process_dataset_with_progress(df, feature_extraction_fn=None, model_training_fn=None,
                                 batch_size=5000, progress_callback=None, column_mapping=None):
     """
     Process a large dataset with progress reporting.
-    
+
     Args:
         df: Input DataFrame with raw data
         feature_extraction_fn: Function to extract features (defaults to extract_features)
@@ -958,32 +985,32 @@ def process_dataset_with_progress(df, feature_extraction_fn=None, model_training
         batch_size: Size of batches to process
         progress_callback: Function(progress_float, status_message) to report progress
         column_mapping: Optional mapping for column names
-        
+
     Returns:
         Tuple of (features_df, trained_model) - model may be None if no training_fn provided
     """
     if feature_extraction_fn is None:
         feature_extraction_fn = extract_features
-    
+
     total_rows = len(df)
     processed_rows = 0
     all_features = []
     model = None
     start_time = time.time()
-    
+
     # Process in batches
     for i in range(0, total_rows, batch_size):
         # Extract batch
         end_idx = min(i + batch_size, total_rows)
         batch = df.iloc[i:end_idx]
         batch_size_actual = len(batch)
-        
+
         # Extract features
         try:
             features = feature_extraction_fn(batch, column_mapping)
             if not features.empty:
                 all_features.append(features)
-                
+
                 # Train model incrementally if function provided
                 if model_training_fn is not None and callable(model_training_fn):
                     if model is None:
@@ -992,30 +1019,30 @@ def process_dataset_with_progress(df, feature_extraction_fn=None, model_training
                         model = model_training_fn(features, model)
         except Exception as exc:
             logger.error(f"Error processing batch {i//batch_size}: {exc}")
-        
+
         # Update progress
         processed_rows += batch_size_actual
         progress = processed_rows / total_rows
-        
+
         if progress_callback:
             elapsed = time.time() - start_time
             remaining = (elapsed / progress) - elapsed if progress > 0 else 0
             message = (f"Processed {processed_rows}/{total_rows} rows "
                       f"({progress:.1%}, ~{remaining:.1f}s remaining)")
             progress_callback(progress, message)
-        
+
         # Periodically free memory
         if (i // batch_size) % 5 == 0:
             gc.collect()
-    
+
     # Combine all features
     if all_features:
         combined_features = pd.concat(all_features)
-        
+
         # Final progress update
         if progress_callback:
             progress_callback(1.0, f"Completed: {len(combined_features)} feature rows from {total_rows} input rows")
-            
+
         return combined_features, model
     else:
         if progress_callback:
@@ -1025,14 +1052,14 @@ def process_dataset_with_progress(df, feature_extraction_fn=None, model_training
 
 def run_model_evaluation(model: MLModel, test_features: pd.DataFrame, test_labels: pd.Series = None) -> Dict[str, float]:
     """Run the evaluation method of a trained ML model and return its metrics.
-    
+
     This is a wrapper function that calls the model's own evaluate method with appropriate parameters.
-    
+
     Args:
         model: A trained MLModel instance
         test_features: Features to use for evaluation
         test_labels: Optional labels for supervised evaluation metrics
-        
+
     Returns:
         Dictionary of evaluation metrics
     """
