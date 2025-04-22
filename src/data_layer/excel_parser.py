@@ -32,9 +32,10 @@ logger = get_logger("excel_parser")
 # Default column name patterns for auto-mapping
 DEFAULT_COLUMN_PATTERNS = {
     'timestamp': ['timestamp', 'date', 'time', 'datetime'],
-    'phone_number': ['phone', 'number', 'contact', 'phonenumber', 'to/from', 'to', 'from'],
+    'phone_number': ['phone', 'number', 'contact', 'phonenumber', 'to/from', 'to', 'from', 'line'],
     'message_type': ['type', 'direction', 'message_type', 'messagetype', 'message type'],
-    'message_content': ['content', 'message', 'text', 'body']
+    'message_content': ['content', 'message', 'text', 'body'],
+    'duration': ['duration', 'length']
 }
 
 class ExcelParser:
@@ -57,7 +58,8 @@ class ExcelParser:
             auto_map_columns: Whether to attempt automatic column mapping
             validate_data: Whether to validate data values after parsing
         """
-        self.required_columns = required_columns or ['timestamp', 'phone_number', 'message_type']
+        # Make required columns more flexible
+        self.required_columns = required_columns or []
         self.date_format = date_format
         self.valid_message_types = valid_message_types or ['sent', 'received']
         self.column_mapping = column_mapping or {}
@@ -284,9 +286,15 @@ class ExcelParser:
             date_col = None
             time_col = None
             for col in df.columns:
-                if col.lower() in ['date', 'datetime', 'timestamp']:
+                col_lower = col.lower()
+                if col_lower in ['date', 'datetime', 'timestamp']:
                     date_col = col
-                elif col.lower() == 'time':
+                elif col_lower == 'time':
+                    time_col = col
+                # Also check for columns that contain these words
+                elif 'date' in col_lower:
+                    date_col = col
+                elif 'time' in col_lower and 'timestamp' not in col_lower:
                     time_col = col
 
             # If we have separate date and time columns, combine them
@@ -304,20 +312,46 @@ class ExcelParser:
 
             # Look for phone number column
             for col in df.columns:
-                if any(pattern in col.lower() for pattern in ['phone', 'number', 'contact', 'to/from', 'to', 'from']):
+                col_lower = col.lower()
+                if any(pattern in col_lower for pattern in ['phone', 'number', 'contact', 'to/from', 'to', 'from', 'line']):
                     mapping['phone_number'] = col
                     break
 
             # Look for message type column
             for col in df.columns:
-                if any(pattern in col.lower() for pattern in ['type', 'direction', 'message']):
+                col_lower = col.lower()
+                if any(pattern in col_lower for pattern in ['type', 'direction', 'message']):
                     mapping['message_type'] = col
                     break
 
             # Check if we found the minimum required columns
             missing = [col for col in self.required_columns if col not in mapping]
-            if missing:
-                return None, None, f"Could not identify required columns: {', '.join(missing)}"
+
+            # If we're missing required columns but have found some mappings,
+            # we'll add default values for the missing columns
+            if missing and mapping:
+                logger.warning(f"Missing required columns: {missing}. Adding default values.")
+
+                # Add default mappings for missing columns
+                for col in missing:
+                    if col == 'timestamp' and date_col:
+                        # We already have a date column, use that
+                        mapping['timestamp'] = date_col
+                    elif col == 'phone_number':
+                        # Add an empty phone_number column
+                        df['phone_number'] = ''
+                        mapping['phone_number'] = 'phone_number'
+                    elif col == 'message_type':
+                        # Add a default message_type column
+                        df['message_type'] = 'unknown'
+                        mapping['message_type'] = 'message_type'
+                    elif col == 'message_content':
+                        # Add an empty message_content column
+                        df['message_content'] = ''
+                        mapping['message_content'] = 'message_content'
+
+                # Clear the missing list since we've added defaults
+                missing = []
 
             # Apply the mapping and basic cleaning
             result = df.copy()

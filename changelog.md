@@ -28,6 +28,9 @@
 - Improved error handling in file validator with proper exception chaining
 - Enhanced ML models to handle missing `message_content` and `message_length` columns
 - Improved robustness of feature extraction for ML models
+- Made Excel parser more flexible with column detection and mapping
+- Improved handling of different column naming conventions
+- Added support for automatic column mapping with fallbacks
 
 ## [Unreleased]
 
