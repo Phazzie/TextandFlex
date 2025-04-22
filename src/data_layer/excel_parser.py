@@ -266,7 +266,6 @@ class ExcelParser:
                 except Exception as e:
                     logger.warning(f"Failed to parse with provided mapping: {str(e)}")
                     # Fall back to auto-mapping
-                    pass
 
             # Try auto-mapping
             try:
@@ -280,7 +279,6 @@ class ExcelParser:
 
             # Create a mapping based on best guesses
             mapping = {}
-            columns_lower = {col.lower(): col for col in df.columns}
 
             # Look for date/time columns
             date_col = None
