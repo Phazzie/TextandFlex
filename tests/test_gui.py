@@ -103,9 +103,10 @@ def test_results_view(qtbot):
     # Check that the model has the correct data
     assert view.model.rowCount() == 2
     assert view.model.columnCount() == 3
-    assert view.model.headerData(0, 0) == "Name"
-    assert view.model.headerData(1, 0) == "Value"
-    assert view.model.headerData(2, 0) == "Type"
+    from PySide6.QtCore import Qt
+    assert view.model.headerData(0, Qt.Horizontal) == "Name"
+    assert view.model.headerData(1, Qt.Horizontal) == "Value"
+    assert view.model.headerData(2, Qt.Horizontal) == "Type"
 
 
 def test_visualization_view(qtbot):
@@ -154,9 +155,10 @@ def test_data_table_widget(qtbot):
     # Check that the model has the correct data
     assert widget.source_model.rowCount() == 2
     assert widget.source_model.columnCount() == 3
-    assert widget.source_model.headerData(0, 0) == "Name"
-    assert widget.source_model.headerData(1, 0) == "Value"
-    assert widget.source_model.headerData(2, 0) == "Type"
+    from PySide6.QtCore import Qt
+    assert widget.source_model.headerData(0, Qt.Horizontal) == "Name"
+    assert widget.source_model.headerData(1, Qt.Horizontal) == "Value"
+    assert widget.source_model.headerData(2, Qt.Horizontal) == "Type"
 
 
 if __name__ == "__main__":

@@ -222,7 +222,8 @@ class ResultsView(QWidget):
             index (int): The index of the selected column
         """
         column = self.filter_column_combo.currentData()
-        self.proxy_model.setFilterKeyColumn(column)
+        if column is not None:  # Ensure column is not None
+            self.proxy_model.setFilterKeyColumn(column)
         self._update_pagination()
 
     def _on_page_size_changed(self, index):
