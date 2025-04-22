@@ -50,10 +50,9 @@ def sample_config_dict():
             "level": "INFO",
             "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
             "file": None
-        },
-        "data": {
+        },        "data": {
             "excel": {
-                "required_columns": ["timestamp", "phone_number", "message_type", "message_content"],
+                "required_columns": ["timestamp", "phone_number", "message_type"],
                 "date_format": "%Y-%m-%d %H:%M:%S"
             },
             "repository": {
