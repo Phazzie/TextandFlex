@@ -79,8 +79,13 @@ class VisualizationView(QWidget):
     # Signals
     export_requested = Signal(str, str)  # Emitted when export is requested (format, path)
 
-    def __init__(self, parent=None):
-        """Initialize the visualization view."""
+    def __init__(self, visualization_controller=None, parent=None):
+        """Initialize the visualization view.
+
+        Args:
+            visualization_controller: The visualization controller to use
+            parent: The parent widget
+        """
         super().__init__(parent)
 
         # Initialize UI components
@@ -92,6 +97,16 @@ class VisualizationView(QWidget):
         self.current_title = None
         self.current_x_label = None
         self.current_y_label = None
+
+        # Set up the visualization controller
+        self.visualization_controller = visualization_controller
+
+        # Connect signals if controller is provided
+        if self.visualization_controller:
+            # Connect controller signals to view methods
+            self.visualization_controller.export_started.connect(self.on_export_started)
+            self.visualization_controller.export_completed.connect(self.on_export_completed)
+            self.visualization_controller.export_failed.connect(self.on_export_failed)
 
     def _init_ui(self):
         """Initialize the UI components."""
@@ -336,29 +351,70 @@ class VisualizationView(QWidget):
             if not file_path.lower().endswith(f".{export_format}"):
                 file_path += f".{export_format}"
 
-            try:
-                # Save the figure
-                self.canvas.fig.savefig(
-                    file_path,
-                    format=export_format,
-                    dpi=300,
-                    bbox_inches='tight'
-                )
+            # If we have a controller, use it to export the visualization
+            if self.visualization_controller:
+                self.visualization_controller.export_visualization(export_format, file_path, self.canvas.fig)
+            else:
+                try:
+                    # Save the figure directly
+                    self.canvas.fig.savefig(
+                        file_path,
+                        format=export_format,
+                        dpi=300,
+                        bbox_inches='tight'
+                    )
 
-                # Show success message
-                QMessageBox.information(
-                    self,
-                    "Export Successful",
-                    f"Visualization exported to {file_path}"
-                )
+                    # Show success message
+                    QMessageBox.information(
+                        self,
+                        "Export Successful",
+                        f"Visualization exported to {file_path}"
+                    )
 
-            except Exception as e:
-                # Show error message
-                QMessageBox.critical(
-                    self,
-                    "Export Failed",
-                    f"Failed to export visualization: {str(e)}"
-                )
+                except Exception as e:
+                    # Show error message
+                    QMessageBox.critical(
+                        self,
+                        "Export Failed",
+                        f"Failed to export visualization: {str(e)}"
+                    )
+
+    @Slot(str)
+    def on_export_started(self, message):
+        """Handle the export_started signal from the controller.
+
+        Args:
+            message (str): The status message
+        """
+        self.status_label.setText(message)
+
+    @Slot(str)
+    def on_export_completed(self, message):
+        """Handle the export_completed signal from the controller.
+
+        Args:
+            message (str): The status message
+        """
+        self.status_label.setText(message)
+        QMessageBox.information(
+            self,
+            "Export Successful",
+            message
+        )
+
+    @Slot(str)
+    def on_export_failed(self, error_message):
+        """Handle the export_failed signal from the controller.
+
+        Args:
+            error_message (str): The error message
+        """
+        self.status_label.setText(f"Export failed: {error_message}")
+        QMessageBox.critical(
+            self,
+            "Export Failed",
+            f"Failed to export visualization: {error_message}"
+        )
 
 
 # For testing purposes

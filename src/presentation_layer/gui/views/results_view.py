@@ -31,9 +31,15 @@ class ResultsView(QWidget):
 
     # Signals
     export_requested = Signal(str, str)  # Emitted when export is requested (format, path)
+    visualization_requested = Signal(dict, str)  # Emitted when visualization is requested (data, title)
 
-    def __init__(self, parent=None):
-        """Initialize the results view."""
+    def __init__(self, results_controller=None, parent=None):
+        """Initialize the results view.
+
+        Args:
+            results_controller: The results controller to use
+            parent: The parent widget
+        """
         super().__init__(parent)
 
         # Initialize UI components
@@ -43,6 +49,19 @@ class ResultsView(QWidget):
         self.current_page = 0
         self.page_size = 50
         self.total_rows = 0
+
+        # Set up the results controller
+        self.results_controller = results_controller
+
+        # Connect signals if controller is provided
+        if self.results_controller:
+            # Connect view signals to controller methods
+            self.export_requested.connect(self.results_controller.export_results)
+
+            # Connect controller signals to view methods
+            self.results_controller.export_started.connect(self.on_export_started)
+            self.results_controller.export_completed.connect(self.on_export_completed)
+            self.results_controller.export_failed.connect(self.on_export_failed)
 
     def _init_ui(self):
         """Initialize the UI components."""
@@ -72,6 +91,14 @@ class ResultsView(QWidget):
         self.export_format_combo.addItem("Excel", "xlsx")
         self.export_format_combo.addItem("JSON", "json")
         toolbar.addWidget(self.export_format_combo)
+
+        toolbar.addSeparator()
+
+        # Visualize button
+        self.visualize_button = QPushButton("Visualize")
+        self.visualize_button.setToolTip("Visualize the results as a chart")
+        self.visualize_button.clicked.connect(self.request_visualization)
+        toolbar.addWidget(self.visualize_button)
 
         toolbar.addSeparator()
 
@@ -324,6 +351,69 @@ class ResultsView(QWidget):
 
             # Emit the export_requested signal
             self.export_requested.emit(export_format, file_path)
+
+    def request_visualization(self):
+        """Request a visualization of the current results."""
+        if self.model.rowCount() == 0:
+            QMessageBox.warning(
+                self,
+                "No Data",
+                "There is no data to visualize."
+            )
+            return
+
+        # Prepare the data for visualization
+        data = {}
+        for row in range(min(10, self.model.rowCount())):
+            # Use the first column as the category and the second as the value
+            if self.model.columnCount() >= 2:
+                category = self.model.data(self.model.index(row, 0), Qt.DisplayRole)
+                try:
+                    value = float(self.model.data(self.model.index(row, 1), Qt.DisplayRole))
+                except (ValueError, TypeError):
+                    value = 1  # Default value if conversion fails
+                data[category] = value
+
+        # Emit the visualization_requested signal
+        if data:
+            self.visualization_requested.emit(data, "Analysis Results")
+
+    @Slot(str)
+    def on_export_started(self, message):
+        """Handle the export_started signal from the controller.
+
+        Args:
+            message (str): The status message
+        """
+        self.status_label.setText(message)
+
+    @Slot(str)
+    def on_export_completed(self, message):
+        """Handle the export_completed signal from the controller.
+
+        Args:
+            message (str): The status message
+        """
+        self.status_label.setText(message)
+        QMessageBox.information(
+            self,
+            "Export Successful",
+            message
+        )
+
+    @Slot(str)
+    def on_export_failed(self, error_message):
+        """Handle the export_failed signal from the controller.
+
+        Args:
+            error_message (str): The error message
+        """
+        self.status_label.setText(f"Export failed: {error_message}")
+        QMessageBox.critical(
+            self,
+            "Export Failed",
+            f"Failed to export results: {error_message}"
+        )
 
 
 # For testing purposes
