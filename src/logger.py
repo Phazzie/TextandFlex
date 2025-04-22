@@ -6,10 +6,9 @@ Configures application-wide logging with context-aware capabilities.
 
 import logging
 import sys
-import os
 import threading
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Optional
 
 # Thread-local storage for context data
 _context_storage = threading.local()
@@ -131,3 +130,10 @@ def get_logger(name: str) -> logging.Logger:
         logger.addFilter(ContextFilter())
 
     return logger
+
+
+# Initialize the root logger
+setup_logger()
+
+# Create an application-wide logger instance
+app_logger = get_logger('app')

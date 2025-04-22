@@ -9,10 +9,11 @@ and content of phone records data.
 
 import os
 import re
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Tuple, Set, Any
+from typing import List, Union
+
+import pandas as pd
 
 from ..logger import get_logger
 
@@ -177,22 +178,25 @@ def validate_dataframe_values(
     validation_df['validation_error'] = ''
 
     # Validate phone numbers
-    mask = validation_df['phone_number'].apply(
-        lambda x: not validate_phone_number_format(str(x)) if pd.notna(x) else True
-    )
-    validation_df.loc[mask, 'validation_error'] += 'Invalid phone number; '
+    if 'phone_number' in validation_df.columns:
+        mask = validation_df['phone_number'].apply(
+            lambda x: not validate_phone_number_format(str(x)) if pd.notna(x) else True
+        )
+        validation_df.loc[mask, 'validation_error'] += 'Invalid phone number; '
 
     # Validate timestamps
-    mask = validation_df['timestamp'].apply(
-        lambda x: not validate_timestamp_format(str(x), timestamp_format) if pd.notna(x) else True
-    )
-    validation_df.loc[mask, 'validation_error'] += 'Invalid timestamp format; '
+    if 'timestamp' in validation_df.columns:
+        mask = validation_df['timestamp'].apply(
+            lambda x: not validate_timestamp_format(str(x), timestamp_format) if pd.notna(x) else True
+        )
+        validation_df.loc[mask, 'validation_error'] += 'Invalid timestamp format; '
 
     # Validate message types
-    mask = validation_df['message_type'].apply(
-        lambda x: not validate_message_type(str(x), valid_message_types) if pd.notna(x) else True
-    )
-    validation_df.loc[mask, 'validation_error'] += 'Invalid message type; '
+    if 'message_type' in validation_df.columns:
+        mask = validation_df['message_type'].apply(
+            lambda x: not validate_message_type(str(x), valid_message_types) if pd.notna(x) else True
+        )
+        validation_df.loc[mask, 'validation_error'] += 'Invalid message type; '
 
     # Return only rows with validation errors
     return validation_df[validation_df['validation_error'] != '']

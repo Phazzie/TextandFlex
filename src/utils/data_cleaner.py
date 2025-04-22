@@ -7,11 +7,9 @@ This module provides functions to clean and normalize data from Excel files,
 including phone numbers, timestamps, message types, and message content.
 """
 
-import pandas as pd
-import numpy as np
 import re
-from typing import Dict, List, Optional, Union
-from datetime import datetime
+
+import pandas as pd
 
 from ..logger import get_logger
 
@@ -144,7 +142,8 @@ def clean_message_content(df: pd.DataFrame) -> pd.DataFrame:
     """
     if 'message_content' not in df.columns:
         logger.warning("Column 'message_content' not found in DataFrame")
-        return df
+        # Add an empty message_content column if it doesn't exist
+        df['message_content'] = ''
 
     # Create a copy to avoid modifying the original
     result = df.copy()

@@ -7,23 +7,33 @@ This module provides functionality to parse Excel files containing phone records
 validate their structure and content, and convert them into structured data for analysis.
 """
 
-import os
-import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Tuple, Any
+from typing import Any, Dict, List, Optional, Union
 
-from ..utils.validators import validate_file_exists, validate_file_extension, validate_dataframe_columns, validate_dataframe_values
-from ..utils.data_cleaner import clean_dataframe, normalize_phone_numbers, standardize_timestamps, normalize_message_types, clean_message_content
+import pandas as pd
+
 from ..logger import get_logger
-from .parser_exceptions import ParserError, ValidationError, MappingError
+from ..utils.data_cleaner import (
+    clean_message_content,
+    normalize_message_types,
+    normalize_phone_numbers,
+    standardize_timestamps,
+)
+from ..utils.validators import (
+    validate_dataframe_columns,
+    validate_dataframe_values,
+    validate_file_exists,
+    validate_file_extension,
+)
+from .parser_exceptions import MappingError, ParserError, ValidationError
 
 logger = get_logger("excel_parser")
 
 # Default column name patterns for auto-mapping
 DEFAULT_COLUMN_PATTERNS = {
     'timestamp': ['timestamp', 'date', 'time', 'datetime'],
-    'phone_number': ['phone', 'number', 'contact', 'phonenumber'],
-    'message_type': ['type', 'direction', 'message_type', 'messagetype'],
+    'phone_number': ['phone', 'number', 'contact', 'phonenumber', 'to/from', 'to', 'from'],
+    'message_type': ['type', 'direction', 'message_type', 'messagetype', 'message type'],
     'message_content': ['content', 'message', 'text', 'body']
 }
 
@@ -40,14 +50,14 @@ class ExcelParser:
         """Initialize the Excel parser with configuration options.
 
         Args:
-            required_columns: List of required column names (default: timestamp, phone_number, message_type, message_content)
+            required_columns: List of required column names (default: timestamp, phone_number, message_type)
             date_format: Format string for parsing dates (default: %Y-%m-%d %H:%M:%S)
             valid_message_types: List of valid message types (default: sent, received)
             column_mapping: Dictionary mapping standard column names to file column names
             auto_map_columns: Whether to attempt automatic column mapping
             validate_data: Whether to validate data values after parsing
         """
-        self.required_columns = required_columns or ['timestamp', 'phone_number', 'message_type', 'message_content']
+        self.required_columns = required_columns or ['timestamp', 'phone_number', 'message_type']
         self.date_format = date_format
         self.valid_message_types = valid_message_types or ['sent', 'received']
         self.column_mapping = column_mapping or {}
@@ -104,7 +114,7 @@ class ExcelParser:
             logger.info(f"Successfully parsed Excel file: {file_path}")
             return df
 
-        except (FileNotFoundError, ValueError) as e:
+        except (FileNotFoundError, ValueError):
             # Re-raise these exceptions as they are already handled
             raise
         except Exception as e:
@@ -223,3 +233,105 @@ class ExcelParser:
             error_msg = f"Found {len(validation_errors)} validation errors in data"
             logger.error(error_msg)
             raise ValidationError(error_msg, validation_errors)
+
+    def parse_and_detect(self, file_path: Union[str, Path], sheet_name: Any = 0) -> tuple:
+        """Parse an Excel file and detect column mappings.
+
+        This method attempts to parse the file and automatically detect column mappings.
+        It's more flexible than the parse method and returns additional information.
+
+        Args:
+            file_path: Path to the Excel file
+            sheet_name: Name or index of the sheet to parse (default: 0)
+
+        Returns:
+            Tuple of (DataFrame, column_mapping, error_message)
+            If successful, error_message will be None
+            If failed, DataFrame will be None and error_message will contain the error
+        """
+        try:
+            # Try to parse with auto-mapping
+            auto_map_parser = ExcelParser(
+                required_columns=self.required_columns,
+                date_format=self.date_format,
+                valid_message_types=self.valid_message_types,
+                auto_map_columns=True
+            )
+
+            # First try with the provided column mapping
+            if self.column_mapping:
+                try:
+                    df = self.parse(file_path, sheet_name)
+                    return df, self.column_mapping, None
+                except Exception as e:
+                    logger.warning(f"Failed to parse with provided mapping: {str(e)}")
+                    # Fall back to auto-mapping
+                    pass
+
+            # Try auto-mapping
+            try:
+                df = auto_map_parser.parse(file_path, sheet_name)
+                return df, auto_map_parser.column_mapping, None
+            except Exception as e:
+                logger.warning(f"Failed to auto-map columns: {str(e)}")
+
+            # If we get here, try a more flexible approach with minimal validation
+            df = pd.read_excel(file_path, sheet_name=sheet_name)
+
+            # Create a mapping based on best guesses
+            mapping = {}
+            columns_lower = {col.lower(): col for col in df.columns}
+
+            # Look for date/time columns
+            date_col = None
+            time_col = None
+            for col in df.columns:
+                if col.lower() in ['date', 'datetime', 'timestamp']:
+                    date_col = col
+                elif col.lower() == 'time':
+                    time_col = col
+
+            # If we have separate date and time columns, combine them
+            if date_col and time_col:
+                # Create a new timestamp column by combining date and time
+                try:
+                    df['timestamp'] = df.apply(
+                        lambda row: f"{row[date_col]} {row[time_col]}", axis=1
+                    )
+                    mapping['timestamp'] = 'timestamp'
+                except Exception as e:
+                    logger.error(f"Failed to combine date and time columns: {str(e)}")
+            elif date_col:
+                mapping['timestamp'] = date_col
+
+            # Look for phone number column
+            for col in df.columns:
+                if any(pattern in col.lower() for pattern in ['phone', 'number', 'contact', 'to/from', 'to', 'from']):
+                    mapping['phone_number'] = col
+                    break
+
+            # Look for message type column
+            for col in df.columns:
+                if any(pattern in col.lower() for pattern in ['type', 'direction', 'message']):
+                    mapping['message_type'] = col
+                    break
+
+            # Check if we found the minimum required columns
+            missing = [col for col in self.required_columns if col not in mapping]
+            if missing:
+                return None, None, f"Could not identify required columns: {', '.join(missing)}"
+
+            # Apply the mapping and basic cleaning
+            result = df.copy()
+
+            # Add empty message_content column if needed and not present
+            if 'message_content' not in result.columns and 'message_content' in self.required_columns:
+                result['message_content'] = ''
+                mapping['message_content'] = 'message_content'
+
+            return result, mapping, None
+
+        except Exception as e:
+            error_msg = f"Error parsing Excel file: {str(e)}"
+            logger.error(error_msg)
+            return None, None, error_msg
