@@ -14,10 +14,9 @@ import pandas as pd
 
 from ..logger import get_logger
 from ..utils.data_cleaner import (
-    clean_message_content,
     normalize_message_types,
     normalize_phone_numbers,
-    standardize_timestamps,
+    standardize_timestamps
 )
 from ..utils.validators import (
     validate_dataframe_columns,
@@ -34,7 +33,6 @@ DEFAULT_COLUMN_PATTERNS = {
     'timestamp': ['timestamp', 'date', 'time', 'datetime'],
     'phone_number': ['phone', 'number', 'contact', 'phonenumber', 'to/from', 'to', 'from', 'line'],
     'message_type': ['type', 'direction', 'message_type', 'messagetype', 'message type'],
-    'message_content': ['content', 'message', 'text', 'body'],
     'duration': ['duration', 'length']
 }
 
@@ -208,9 +206,6 @@ class ExcelParser:
 
         # Normalize message types
         result = normalize_message_types(result)
-
-        # Clean message content
-        result = clean_message_content(result)
 
         return result
 
