@@ -239,10 +239,10 @@ This plan focuses on implementing the UI components, improving the user experien
      - [x] Connect FileController to FileView
      - [x] Test file selection end-to-end
      - [x] Verify error handling across boundaries
-  2. [ ] Integrate analysis components next
-     - [ ] Connect AnalysisController to AnalysisView
-     - [ ] Test analysis workflow end-to-end
-     - [ ] Verify progress reporting works correctly
+  2. [x] Integrate analysis components next
+     - [x] Connect AnalysisController to AnalysisView
+     - [x] Test analysis workflow end-to-end
+     - [x] Verify progress reporting works correctly
   3. [ ] Integrate results display components
      - [ ] Connect analysis results models to ResultsView### Phase I1: Preparation and Interface Definition
 

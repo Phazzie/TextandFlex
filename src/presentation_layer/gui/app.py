@@ -1,8 +1,15 @@
+"""
+GUI Application Entry Point
+-----------------------
+This module provides the entry point for launching the GUI.
+"""
+
+from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtCore import QTimer
+
 import sys
 import traceback
 from pathlib import Path
-from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox
-from PySide6.QtCore import QTimer
 
 from src.presentation_layer.gui.controllers.file_controller import FileController
 from src.presentation_layer.gui.controllers.analysis_controller import AnalysisController
@@ -35,18 +42,18 @@ def main():
     """Main entry point for the GUI application."""
     # Create the Qt Application
     app = QApplication(sys.argv)
-
+    
     try:
         # Initialize data layer components
         repository = PhoneRecordRepository()
         parser = ExcelParser()
-
+        
         # Initialize analysis layer components
         basic_analyzer = BasicStatisticsAnalyzer()
         contact_analyzer = ContactAnalyzer()
         time_analyzer = TimeAnalyzer()
         pattern_detector = PatternDetector()
-
+        
         # Initialize controllers
         file_controller = FileController(repository=repository, parser=parser)
         analysis_controller = AnalysisController(
@@ -56,54 +63,54 @@ def main():
             pattern_detector=pattern_detector
         )
         app_controller = AppController(file_controller, analysis_controller)
-
+        
         # Initialize views
         main_window = MainWindow()
         file_view = FileView(file_controller=file_controller)
-        analysis_view = AnalysisView()
+        analysis_view = AnalysisView(analysis_controller=analysis_controller)
         results_view = ResultsView()
         visualization_view = VisualizationView()
-
+        
         # Add views to main window
         main_window.add_view(file_view, "file_view")
         main_window.add_view(analysis_view, "analysis_view")
         main_window.add_view(results_view, "results_view")
         main_window.add_view(visualization_view, "visualization_view")
-
+        
         # Connect signals and slots
         # File view connections
         # The file_view already has connections to the file_controller
         # We just need to connect the file_loaded signal to show the analysis view
-        file_controller.file_loaded.connect(lambda file_model: main_window.show_view("analysis_view"))
-
+        file_controller.file_loaded.connect(lambda file_model: (
+            analysis_view.set_current_file_model(file_model),
+            main_window.show_view("analysis_view")
+        ))
+        
         # Analysis view connections
-        analysis_view.analysis_requested.connect(lambda analysis_type, options:
-            analysis_controller.run_analysis(analysis_type, file_controller.current_file_model, options))
-        analysis_controller.analysis_started.connect(lambda msg: analysis_view.set_progress_message(msg))
-        analysis_controller.analysis_progress.connect(lambda percent: analysis_view.set_progress(percent))
+        # The analysis_view already has connections to the analysis_controller
+        # We just need to connect the analysis_completed signal to show the results view
         analysis_controller.analysis_completed.connect(lambda result: (
             results_view.set_results(result.data.columns.tolist(), result.data.values.tolist()),
             main_window.show_view("results_view")
         ))
-        analysis_controller.analysis_failed.connect(lambda error: show_error_dialog("Analysis Error", error))
-
+        
         # Results view connections
         results_view.visualization_requested.connect(lambda data, title: (
             visualization_view.set_data(data, title, "Categories", "Values"),
             main_window.show_view("visualization_view")
         ))
-
+        
         # App controller connections
         app_controller.app_state_changed.connect(lambda state: print(f"App state changed: {state}"))
         app_controller.error_occurred.connect(lambda error: show_error_dialog("Application Error", error))
-
+        
         # Show the main window with the file view
         main_window.show_view("file_view")
         main_window.show()
-
+        
         # Start the application event loop
         return app.exec()
-
+        
     except Exception as exc:
         # Log the error
         handler = ErrorHandler("AppEntryPoint")
@@ -113,15 +120,15 @@ def main():
             str(exc),
             user_message="Critical error during application startup. Please contact support."
         )
-
+        
         # Show error dialog
         error_message = f"Critical error during application startup:\n{str(exc)}\n\nPlease check the logs for details."
-
+        
         # Use QTimer to show the dialog after the event loop has started
         def show_error():
             show_error_dialog("Application Error", error_message)
             QTimer.singleShot(0, lambda: sys.exit(1))
-
+            
         QTimer.singleShot(0, show_error)
         return app.exec()
 

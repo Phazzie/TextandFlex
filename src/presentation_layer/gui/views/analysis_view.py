@@ -31,8 +31,13 @@ class AnalysisView(QWidget):
     # Signals
     analysis_requested = Signal(str, dict)  # Emitted when analysis is requested
 
-    def __init__(self, parent=None):
-        """Initialize the analysis view."""
+    def __init__(self, analysis_controller=None, parent=None):
+        """Initialize the analysis view.
+
+        Args:
+            analysis_controller: The analysis controller to use
+            parent: The parent widget
+        """
         super().__init__(parent)
 
         # Initialize UI components
@@ -40,6 +45,25 @@ class AnalysisView(QWidget):
 
         # Analysis history
         self.analysis_history = []
+
+        # Current file model
+        self.current_file_model = None
+
+        # Set up the analysis controller
+        self.analysis_controller = analysis_controller
+
+        # Connect signals if controller is provided
+        if self.analysis_controller:
+            # Connect view signals to controller methods
+            self.analysis_requested.connect(lambda analysis_type, options:
+                self.analysis_controller.run_analysis(analysis_type, self.current_file_model, options))
+            self.cancel_button.clicked.connect(self.analysis_controller.cancel_analysis)
+
+            # Connect controller signals to view methods
+            self.analysis_controller.analysis_started.connect(self.on_analysis_started)
+            self.analysis_controller.analysis_progress.connect(self.on_analysis_progress)
+            self.analysis_controller.analysis_completed.connect(self.on_analysis_completed)
+            self.analysis_controller.analysis_failed.connect(self.on_analysis_failed)
 
     def _init_ui(self):
         """Initialize the UI components."""
@@ -368,6 +392,89 @@ class AnalysisView(QWidget):
             self.cancel_button.setEnabled(False)
             if status is None:
                 self.status_label.setText("Analysis complete")
+
+    def set_progress_message(self, message):
+        """
+        Set the progress message.
+
+        Args:
+            message (str): The progress message
+        """
+        self.status_label.setText(message)
+
+    def set_current_file_model(self, file_model):
+        """
+        Set the current file model.
+
+        Args:
+            file_model: The file model to use for analysis
+        """
+        self.current_file_model = file_model
+
+    @Slot(str)
+    def on_analysis_started(self, analysis_type):
+        """
+        Handle the analysis_started signal from the controller.
+
+        Args:
+            analysis_type (str): The type of analysis that was started
+        """
+        # Update UI
+        self.run_button.setEnabled(False)
+        self.cancel_button.setEnabled(True)
+        self.progress_bar.setValue(0)
+        self.status_label.setText(f"Running {analysis_type} analysis...")
+
+    @Slot(int)
+    def on_analysis_progress(self, percent):
+        """
+        Handle the analysis_progress signal from the controller.
+
+        Args:
+            percent (int): The progress percentage (0-100)
+        """
+        self.progress_bar.setValue(percent)
+
+    @Slot(object)
+    def on_analysis_completed(self, result):
+        """
+        Handle the analysis_completed signal from the controller.
+
+        Args:
+            result: The analysis result
+        """
+        # Update UI
+        self.run_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
+        self.progress_bar.setValue(100)
+        self.status_label.setText("Analysis complete")
+
+        # Add to history
+        analysis_type = result.result_type.name.lower()
+        options = {}
+        self._add_to_history(analysis_type, options)
+
+    @Slot(str)
+    def on_analysis_failed(self, error_message):
+        """
+        Handle the analysis_failed signal from the controller.
+
+        Args:
+            error_message (str): The error message
+        """
+        # Update UI
+        self.run_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
+        self.progress_bar.setValue(0)
+        self.status_label.setText("Analysis failed")
+
+        # Show error message
+        from PySide6.QtWidgets import QMessageBox
+        QMessageBox.critical(
+            self,
+            "Analysis Error",
+            f"Analysis failed: {error_message}"
+        )
 
 
 # For testing purposes
