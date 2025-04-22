@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 from typing import List
-from phone_analyzer.src.utils.validators import validate_dataframe_columns
+from src.utils.validators import validate_dataframe_columns
 
 ALLOWED_EXTENSIONS = {".xlsx", ".csv"}
 MAX_FILE_SIZE_MB = 10
@@ -10,8 +10,8 @@ MAX_FILE_SIZE_MB = 10
 REQUIRED_COLUMNS = [
     'timestamp',
     'phone_number',
-    'message_type',
-    'message_content'
+    'message_type'
+    # 'message_content' is now optional
 ]
 
 class FileValidationError(Exception):
@@ -45,9 +45,9 @@ def validate_file_content(file_path: str, required_columns: List[str] = None):
         else:
             raise FileValidationError("Unsupported file extension for content validation.")
     except Exception as exc:
-        raise FileValidationError(f"Failed to read file: {exc}")
+        raise FileValidationError(f"Failed to read file: {exc}") from exc
     try:
         validate_dataframe_columns(df, required_columns)
     except Exception as exc:
-        raise FileValidationError(f"Missing required columns: {exc}")
+        raise FileValidationError(f"Missing required columns: {exc}") from exc
     return True

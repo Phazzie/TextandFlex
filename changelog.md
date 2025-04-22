@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+## [2025-05-03] Logger and Excel Parser Improvements
+
+### Added
+
+- Added `app_logger` instance to `src/logger.py` for application-wide logging
+- Implemented `parse_and_detect` method in `ExcelParser` for more flexible column detection
+- Added support for separate date and time columns in Excel parsing
+
+### Changed
+
+- Modified `ExcelParser` to make `message_content` column optional
+- Enhanced column pattern matching to better handle various data formats
+- Updated validators to check if columns exist before validating them
+- Modified data cleaner to add empty columns for missing required fields
+- Updated GUI app configuration to support more diverse data formats
+
+### Fixed
+
+- Fixed logger import issue in `app.py`
+- Improved error handling in Excel parsing for better user feedback
+- Enhanced column detection to work with different naming conventions
+- Fixed file validator to make `message_content` column optional
+- Updated file validator to use local validators instead of phone_analyzer imports
+- Improved error handling in file validator with proper exception chaining
+
+## [Unreleased]
+
 ### Added
 
 - Implemented Message and Contact models in models.py
