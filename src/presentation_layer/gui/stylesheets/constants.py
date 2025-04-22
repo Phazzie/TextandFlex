@@ -180,10 +180,10 @@ class Animation:
     DURATION_MEDIUM = 300
     DURATION_SLOW = 500
 
-    # Easing curves
-    EASING_STANDARD = Qt.CubicInOutInterpolation
-    EASING_ACCELERATE = Qt.LinearInterpolation
-    EASING_DECELERATE = Qt.LinearInterpolation
+    # Easing curves - using integers for compatibility
+    EASING_STANDARD = 2  # Qt.OutCubic
+    EASING_ACCELERATE = 0  # Qt.Linear
+    EASING_DECELERATE = 0  # Qt.Linear
 
 
 # Z-Index (for stacking elements)
