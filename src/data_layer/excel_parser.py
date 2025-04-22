@@ -345,10 +345,7 @@ class ExcelParser:
                         # Add a default message_type column
                         df['message_type'] = 'unknown'
                         mapping['message_type'] = 'message_type'
-                    elif col == 'message_content':
-                        # Add an empty message_content column
-                        df['message_content'] = ''
-                        mapping['message_content'] = 'message_content'
+
 
                 # Clear the missing list since we've added defaults
                 missing = []
@@ -356,10 +353,7 @@ class ExcelParser:
             # Apply the mapping and basic cleaning
             result = df.copy()
 
-            # Add empty message_content column if needed and not present
-            if 'message_content' not in result.columns and 'message_content' in self.required_columns:
-                result['message_content'] = ''
-                mapping['message_content'] = 'message_content'
+
 
             return result, mapping, None
 

@@ -204,7 +204,6 @@ class Message:
     timestamp: str
     phone_number: str
     message_type: str  # 'sent' or 'received'
-    content: str
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary.
@@ -215,8 +214,7 @@ class Message:
         return {
             "timestamp": self.timestamp,
             "phone_number": self.phone_number,
-            "message_type": self.message_type,
-            "content": self.content
+            "message_type": self.message_type
         }
 
     @classmethod
@@ -232,8 +230,7 @@ class Message:
         return cls(
             timestamp=data.get("timestamp", ""),
             phone_number=data.get("phone_number", ""),
-            message_type=data.get("message_type", ""),
-            content=data.get("content", "")
+            message_type=data.get("message_type", "")
         )
 
 

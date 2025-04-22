@@ -66,7 +66,6 @@ DEFAULT_COLUMN_MAPPING = {
     'timestamp': 'Timestamp',
     'contact': 'Contact',
     'message_length': 'MessageLength',
-    'message_content': 'MessageContent',
     'phone_number': 'To/From',
     # Add other columns if needed by features
 }

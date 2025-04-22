@@ -2,6 +2,54 @@
 
 ## [Unreleased]
 
+## [2025-05-05] Complete Removal of Message Content
+
+### Changed
+
+- Completely removed all `message_content` references from the codebase as this field will never be used
+- Removed `message_content` from validation schema's required and optional fields
+- Removed `message_content` from default configuration in `config.py`
+- Updated `Message` class to remove the `content` field and related methods
+- Removed `clean_message_content` function from data cleaner and its call in `clean_dataframe`
+- Simplified pattern detector by removing all content pattern detection functionality
+- Updated ML models to remove references to `message_content` in column mappings
+- Updated Excel parser to remove code that adds empty `message_content` columns
+
+### Fixed
+
+- Simplified data flow by removing unnecessary `message_content` handling
+- Reduced complexity in pattern detection by removing content-based patterns
+- Improved performance by eliminating unnecessary data processing
+- Reduced memory usage by not storing empty content fields
+- Made codebase more focused on the actual metadata being processed
+
+## [Unreleased]
+
+## [2025-05-04] Comprehensive Message Content Handling
+
+### Added
+
+- Added `OPTIONAL_COLUMN_MAPPING_FIELDS` in `validation_schema.py` to properly categorize optional fields
+- Enhanced `validate_dataset_properties` to automatically add empty `message_content` column when needed
+- Added better error handling in column mapping validation
+
+### Changed
+
+- Updated `DEFAULT_CONFIG` in `config.py` to make `message_content` optional
+- Modified `REQUIRED_COLUMN_MAPPING_FIELDS` in `validation_schema.py` to remove `message_content`
+- Enhanced `validate_column_mapping` to provide more detailed error messages
+- Improved `ExcelParser` to handle missing `message_content` column more gracefully
+- Updated ML models to handle datasets without `message_content` column
+
+### Fixed
+
+- Fixed validation in `validate_dataset_properties` to properly handle missing columns
+- Enhanced error handling in `validate_column_mapping` with better error messages
+- Fixed ML models to use default values when `message_content` or `message_length` are missing
+- Improved pattern detection to gracefully handle missing `message_content` column
+
+## [Unreleased]
+
 ## [2025-05-03] Logger and Excel Parser Improvements
 
 ### Added

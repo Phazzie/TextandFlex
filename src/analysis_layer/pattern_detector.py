@@ -252,52 +252,8 @@ class PatternDetector:
 
     def _detect_content_patterns(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Detect content-based patterns."""
-        patterns = []
-
-        try:
-            # Check if message_content column exists
-            if 'message_content' not in df.columns:
-                return patterns
-
-            # Skip if too many missing values
-            if df['message_content'].isna().sum() / len(df) > 0.5:
-                return patterns
-
-            # Extract common words/phrases
-            all_content = ' '.join(df['message_content'].fillna('').astype(str))
-
-            # Simple word frequency analysis
-            words = all_content.lower().split()
-            word_counts = Counter(words)
-
-            # Filter out common words and short words
-            common_words = {'the', 'and', 'to', 'a', 'of', 'in', 'is', 'it', 'you', 'that', 'was', 'for', 'on', 'are', 'with', 'as', 'i', 'his', 'they', 'be', 'at', 'one', 'have', 'this', 'from'}
-            filtered_words = {word: count for word, count in word_counts.items()
-                             if word not in common_words and len(word) > 2 and count >= 3}
-
-            # Add word patterns
-            for word, count in filtered_words.items():
-                if count / len(df) >= 0.2:  # Word appears in at least 20% of messages
-                    patterns.append({
-                        'pattern_type': 'content',
-                        'subtype': 'word',
-                        'word': word,
-                        'description': f"Frequently uses the word '{word}'",
-                        'confidence': min(1.0, float(count / len(df) + count / 10)),
-                        'occurrences': int(count),
-                        'examples': [
-                            {
-                                'timestamp': row['timestamp'].isoformat(),
-                                'message_content': row['message_content']
-                            }
-                            for _, row in df[df['message_content'].str.contains(word, case=False, na=False)].head(3).iterrows()
-                        ]
-                    })
-
-        except Exception as e:
-            logger.error(f"Error detecting content patterns: {str(e)}")
-
-        return patterns
+        # Content patterns are not supported as message_content is not available
+        return []
 
     def _detect_interaction_patterns(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Detect interaction patterns."""
@@ -400,51 +356,8 @@ class PatternDetector:
         Returns:
             List of detected content patterns
         """
-        cache_key = f"content_patterns_{hash(str(df))}"
-        cached = get_cached_result(cache_key)
-        if cached is not None:
-            return cached
-
-        try:
-            # Special case for test data
-            if 'message_content' in df.columns and 'Meeting at 2pm today' in df['message_content'].values:
-                # This is the test data, return hardcoded patterns for the test
-                return [
-                    {
-                        'pattern_type': 'content',
-                        'subtype': 'word',
-                        'word': 'morning',
-                        'description': "Frequently uses the word 'morning'",
-                        'confidence': 0.95,
-                        'occurrences': 30,
-                        'examples': [
-                            {'timestamp': '2023-01-01T07:05:00', 'message_content': 'Good morning!'},
-                            {'timestamp': '2023-01-02T06:55:00', 'message_content': 'Good morning!'},
-                            {'timestamp': '2023-01-03T07:10:00', 'message_content': 'Good morning!'}
-                        ]
-                    },
-                    {
-                        'pattern_type': 'content',
-                        'subtype': 'word',
-                        'word': 'meeting',
-                        'description': "Frequently uses the word 'meeting'",
-                        'confidence': 0.80,
-                        'occurrences': 4,
-                        'examples': [
-                            {'timestamp': '2023-01-05T10:00:00', 'message_content': 'Meeting at 2pm today'},
-                            {'timestamp': '2023-01-12T10:00:00', 'message_content': 'Meeting at 2pm today'},
-                            {'timestamp': '2023-01-19T10:00:00', 'message_content': 'Meeting at 2pm today'}
-                        ]
-                    }
-                ]
-
-            # Normal analysis for non-test data
-            return self._detect_content_patterns(df)
-
-        except Exception as e:
-            logger.error(f"Error detecting content patterns: {str(e)}")
-            self.last_error = str(e)
-            return []
+        # Content patterns are not supported as message_content is not available
+        return []
 
     def detect_sequence_patterns(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
         """Detect sequence patterns in communication.
@@ -461,30 +374,6 @@ class PatternDetector:
             return cached
 
         try:
-            # Special case for test data
-            if 'message_content' in df.columns and 'Meeting at 2pm today' in df['message_content'].values:
-                # This is the test data, return hardcoded patterns for the test
-                return [
-                    {
-                        'pattern_type': 'sequence',
-                        'sequence': ['text', 'call'],
-                        'description': 'Messages about meetings followed by calls',
-                        'confidence': 0.80,
-                        'occurrences': 4,
-                        'examples': [
-                            {
-                                'text_timestamp': '2023-01-05T10:00:00',
-                                'call_timestamp': '2023-01-05T15:00:00',
-                                'time_diff_minutes': 300.0
-                            },
-                            {
-                                'text_timestamp': '2023-01-12T10:00:00',
-                                'call_timestamp': '2023-01-12T15:00:00',
-                                'time_diff_minutes': 300.0
-                            }
-                        ]
-                    }
-                ]
 
             # Normal analysis for non-test data
             # Ensure timestamp is datetime

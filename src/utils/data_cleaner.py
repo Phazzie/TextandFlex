@@ -131,40 +131,7 @@ def normalize_message_types(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def clean_message_content(df: pd.DataFrame) -> pd.DataFrame:
-    """Clean message content in the DataFrame.
 
-    Args:
-        df: DataFrame containing message content in 'message_content' column
-
-    Returns:
-        DataFrame with cleaned message content
-    """
-    if 'message_content' not in df.columns:
-        logger.warning("Column 'message_content' not found in DataFrame")
-        # Add an empty message_content column if it doesn't exist
-        df['message_content'] = ''
-
-    # Create a copy to avoid modifying the original
-    result = df.copy()
-
-    # Function to clean a single message
-    def clean_message(content):
-        if pd.isna(content):
-            return ''
-
-        # Convert to string
-        content = str(content)
-
-        # Trim whitespace
-        content = content.strip()
-
-        return content
-
-    # Apply cleaning to the column
-    result['message_content'] = result['message_content'].apply(clean_message)
-
-    return result
 
 
 def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -182,7 +149,6 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     result = normalize_phone_numbers(result)
     result = standardize_timestamps(result)
     result = normalize_message_types(result)
-    result = clean_message_content(result)
 
     # Remove rows with all NaN values
     result = result.dropna(how='all')

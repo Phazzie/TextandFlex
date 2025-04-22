@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
     },
     "data": {
         "excel": {
-            "required_columns": ["timestamp", "phone_number", "message_type", "message_content"],
+            "required_columns": ["timestamp", "phone_number", "message_type"],
             "date_format": "%Y-%m-%d %H:%M:%S"
         },
         "repository": {
