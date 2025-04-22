@@ -37,20 +37,20 @@ This plan focuses on implementing the core functionality of the GUI, integrating
 
 - [x] Implement `models/file_model.py`:
   - [x] Create immutable FileModel class with validation
-  - [ ] Implement file metadata extraction
+  - [x] Implement file metadata extraction
   - [x] Create QAbstractTableModel subclass for data display
 - [x] Implement `models/analysis_model.py`:
   - [x] Create immutable AnalysisResult class
-  - [ ] Define data structures for different analysis types
+  - [x] Define data structures for different analysis types
   - [x] Create QAbstractItemModel subclasses for analysis results
 - [x] Implement `controllers/file_controller.py`:
   - [x] Connect to existing ExcelParser (integration pending)
   - [x] Implement file selection and validation
-  - [ ] Add repository integration
+  - [x] Add repository integration
   - [x] Use Qt signals for event notification
   - [x] Unit tests for controller
 - [x] Implement `controllers/analysis_controller.py`:
-  - [ ] Connect to existing analyzers (integration pending)
+  - [x] Connect to existing analyzers
   - [x] Implement analysis execution using QThreadPool for background processing
   - [x] Use Qt signals for progress updates
   - [x] Unit tests for controller
@@ -66,10 +66,10 @@ This plan focuses on implementing the core functionality of the GUI, integrating
   - [x] Initialize controllers
   - [x] Set up dependency injection
   - [x] Add error handling for initialization
-- [ ] Update `src/app.py` to integrate new GUI:
-  - [ ] Add GUI launch option
-  - [ ] Implement proper error handling
-- [ ] Update `src/cli/commands.py` to support GUI launch
+- [x] Update `src/app.py` to integrate new GUI:
+  - [x] Add GUI launch option
+  - [x] Implement proper error handling
+- [x] Update `src/cli/commands.py` to support GUI launch
 
 ### QA Plan for Core Functionality
 
