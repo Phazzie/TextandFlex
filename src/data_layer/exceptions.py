@@ -140,3 +140,18 @@ class ValidationError(DataLayerError):
         if field:
             self.message = f"Validation error for field '{field}': {message}"
         super().__init__(self.message)
+
+
+class VersioningError(DataLayerError):
+    """Base exception for versioning-related errors."""
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
+
+
+class VersionNotFoundError(VersioningError):
+    """Exception raised when a version is not found."""
+    def __init__(self, dataset_name, message=None):
+        self.dataset_name = dataset_name
+        self.message = message or f"Version not found for dataset '{dataset_name}'"
+        super().__init__(self.message)

@@ -28,6 +28,10 @@ class ContactAnalyzer:
         """Initialize the contact analyzer."""
         self.last_error = None
 
+    def _compute_confidence(self, count: int, total: int, divisor: float) -> float:
+        """Compute confidence score based on count and total interactions."""
+        return min(1.0, float(count / total + count / divisor))
+
     def analyze_contact_frequency(self, df: pd.DataFrame) -> Dict[str, float]:
         """Analyze contact frequency.
 
@@ -92,14 +96,7 @@ class ContactAnalyzer:
                 reverse=True
             )
 
-            # For the test data, we need to handle the specific case
-            # where we have exactly 3 contacts with specific phone numbers
-            if len(sorted_contacts) == 3 and '1234567890' in frequency_scores and '9876543210' in frequency_scores and '5551234567' in frequency_scores:
-                return {
-                    'frequent': ['1234567890'],
-                    'moderate': ['9876543210'],
-                    'infrequent': ['5551234567']
-                }
+            # Note: Removed hard-coded special case for exactly three contacts to avoid overfitting
 
             # Determine thresholds for categories
             # Top 20% are frequent, next 30% are moderate, rest are infrequent
@@ -319,7 +316,7 @@ class ContactAnalyzer:
                         'count': int(count),
                         'percentage': float(count / len(df)),
                         'description': f"Frequently communicates during the {time_of_day} (around {hour}:00)",
-                        'confidence': min(1.0, float(count / len(df) + count / 10))  # Higher confidence with more occurrences
+                        'confidence': self._compute_confidence(count, len(df), 10)  # Higher confidence with more occurrences
                     })
 
             # Check for day patterns
@@ -338,11 +335,12 @@ class ContactAnalyzer:
                         'count': int(count),
                         'percentage': float(count / len(df)),
                         'description': f"Frequently communicates on {day_name}s",
-                        'confidence': min(1.0, float(count / len(df) + count / 5))  # Higher confidence with more occurrences
+                        'confidence': self._compute_confidence(count, len(df), 5)  # Higher confidence with more occurrences
                     })
 
             # Check for specific day-hour combinations
-            df['day_hour'] = df['timestamp'].dt.dayofweek.astype(str) + '_' + df['timestamp'].dt.hour.astype(str)
+            # Using .loc to avoid SettingWithCopyWarning
+            df.loc[:, 'day_hour'] = df['timestamp'].dt.dayofweek.astype(str) + '_' + df['timestamp'].dt.hour.astype(str)
             day_hour_counts = df['day_hour'].value_counts()
 
             for day_hour, count in day_hour_counts.items():
@@ -369,7 +367,7 @@ class ContactAnalyzer:
                         'count': int(count),
                         'percentage': float(count / len(df)),
                         'description': f"Frequently communicates on {day_name} {time_of_day}s (around {hour}:00)",
-                        'confidence': min(1.0, float(count / len(df) + count / 5))  # Higher confidence with more occurrences
+                        'confidence': self._compute_confidence(count, len(df), 5)  # Higher confidence with more occurrences
                     })
 
         except Exception as e:
@@ -404,7 +402,7 @@ class ContactAnalyzer:
             words = all_content.lower().split()
             word_counts = Counter(words)
 
-            # Filter out common words and short words
+            # Filter out common words and words shorter than 3 characters
             common_words = {'the', 'and', 'to', 'a', 'of', 'in', 'is', 'it', 'you', 'that', 'was', 'for', 'on', 'are', 'with', 'as', 'i', 'his', 'they', 'be', 'at', 'one', 'have', 'this', 'from'}
             filtered_words = {word: count for word, count in word_counts.items()
                              if word not in common_words and len(word) > 2 and count >= 3}
@@ -418,7 +416,7 @@ class ContactAnalyzer:
                         'count': count,
                         'percentage': float(count / len(df)),
                         'description': f"Frequently uses the word '{word}'",
-                        'confidence': min(1.0, float(count / len(df) + count / 10))  # Higher confidence with more occurrences
+                        'confidence': self._compute_confidence(count, len(df), 10)  # Higher confidence with more occurrences
                     })
 
             # Check for greeting patterns
@@ -434,7 +432,7 @@ class ContactAnalyzer:
                             'count': int(greeting_count),
                             'percentage': float(greeting_count / len(df)),
                             'description': f"Frequently starts messages with '{greeting.title()}'",
-                            'confidence': min(1.0, float(greeting_count / len(df) + greeting_count / 10))
+                            'confidence': self._compute_confidence(greeting_count, len(df), 10)
                         })
 
             # Check for question patterns
@@ -445,7 +443,7 @@ class ContactAnalyzer:
                     'count': int(question_count),
                     'percentage': float(question_count / len(df)),
                     'description': "Frequently asks questions",
-                    'confidence': min(1.0, float(question_count / len(df) + question_count / 10))
+                    'confidence': self._compute_confidence(question_count, len(df), 10)
                 })
 
         except Exception as e:
@@ -488,7 +486,7 @@ class ContactAnalyzer:
                     'type': 'quick_responder',
                     'avg_response_time': float(avg_response_time),
                     'description': "Typically responds quickly (within 5 minutes)",
-                    'confidence': min(1.0, 0.5 + received_count / 10)  # Higher confidence with more responses
+                    'confidence': self._compute_confidence(received_count, len(df), 10)  # Higher confidence with more responses
                 })
 
             # Check for slow responder pattern
@@ -497,7 +495,7 @@ class ContactAnalyzer:
                     'type': 'slow_responder',
                     'avg_response_time': float(avg_response_time),
                     'description': "Typically responds slowly (over an hour)",
-                    'confidence': min(1.0, 0.5 + received_count / 10)  # Higher confidence with more responses
+                    'confidence': self._compute_confidence(received_count, len(df), 10)  # Higher confidence with more responses
                 })
 
             # Check for conversation initiator pattern
@@ -523,7 +521,7 @@ class ContactAnalyzer:
                     'conversation_days': int(conversation_days),
                     'percentage': float(initiator_count / conversation_days),
                     'description': "Frequently initiates conversations",
-                    'confidence': min(1.0, 0.5 + initiator_count / 5)  # Higher confidence with more initiations
+                    'confidence': self._compute_confidence(initiator_count, len(df), 5)  # Higher confidence with more initiations
                 })
 
         except Exception as e:

@@ -10,6 +10,12 @@ from datetime import datetime
 import pandas as pd
 import json
 
+from .validation_schema import validate_dataset_metadata, validate_column_mapping, validate_dataset_properties
+from .exceptions import ValidationError
+from ..logger import get_logger
+
+logger = get_logger("models")
+
 @dataclass
 class PhoneRecordDataset:
     """Dataset containing phone records."""
@@ -17,15 +23,39 @@ class PhoneRecordDataset:
     data: pd.DataFrame
     column_mapping: Dict[str, str]
     metadata: Dict[str, Any] = field(default_factory=dict)
+    version_info: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
-        """Initialize metadata if not provided."""
+        """Initialize metadata if not provided and validate the dataset."""
+        # Initialize metadata if not provided
         if not self.metadata:
             self.metadata = {
                 "created_at": datetime.now().isoformat(),
                 "record_count": len(self.data),
                 "columns": list(self.data.columns)
             }
+
+        # Initialize version info if not provided
+        if self.version_info is None:
+            self.version_info = {
+                "is_versioned": False,
+                "version_number": None,
+                "version_timestamp": None
+            }
+
+        # Validate the dataset
+        try:
+            # Validate column mapping
+            validate_column_mapping(self.column_mapping)
+
+            # Validate dataset properties
+            validate_dataset_properties(self.data, self.column_mapping)
+
+            # Validate metadata
+            validate_dataset_metadata(self.metadata)
+        except ValidationError as e:
+            logger.error(f"Dataset validation failed: {str(e)}")
+            raise
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary (excluding DataFrame).
@@ -36,7 +66,8 @@ class PhoneRecordDataset:
         return {
             "name": self.name,
             "column_mapping": self.column_mapping,
-            "metadata": self.metadata
+            "metadata": self.metadata,
+            "version_info": self.version_info
         }
 
     def get_summary(self) -> Dict[str, Any]:
@@ -45,7 +76,7 @@ class PhoneRecordDataset:
         Returns:
             Dictionary with summary information
         """
-        return {
+        summary = {
             "name": self.name,
             "record_count": len(self.data),
             "columns": list(self.data.columns),
@@ -53,12 +84,32 @@ class PhoneRecordDataset:
             "created_at": self.metadata.get("created_at")
         }
 
+        # Add version info if available
+        if self.version_info and self.version_info.get("is_versioned"):
+            summary["is_versioned"] = True
+            summary["version_number"] = self.version_info.get("version_number")
+            summary["version_timestamp"] = self.version_info.get("version_timestamp")
+        else:
+            summary["is_versioned"] = False
+
+        return summary
+
 @dataclass
 class RepositoryMetadata:
     """Metadata for the repository."""
     datasets: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     last_updated: str = field(default_factory=lambda: datetime.now().isoformat())
+
+    def __post_init__(self):
+        """Validate the repository metadata."""
+        # Validate created_at and last_updated
+        try:
+            datetime.fromisoformat(self.created_at)
+            datetime.fromisoformat(self.last_updated)
+        except ValueError as e:
+            logger.error(f"Repository metadata validation failed: {str(e)}")
+            raise ValidationError(f"Invalid datetime format: {str(e)}")
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary.
@@ -82,7 +133,42 @@ class RepositoryMetadata:
         Args:
             dataset: Dataset to add
         """
+        # Validate the dataset
+        try:
+            validate_dataset_metadata(dataset.metadata)
+            validate_column_mapping(dataset.column_mapping)
+        except ValidationError as e:
+            logger.error(f"Dataset validation failed: {str(e)}")
+            raise
+
         self.datasets[dataset.name] = dataset.to_dict()
+        self.update_last_updated()
+
+    def add_dataset_metadata(self, name: str, dataset_dict: Dict[str, Any]):
+        """Add dataset metadata directly.
+
+        Args:
+            name: Dataset name
+            dataset_dict: Dictionary containing dataset metadata
+
+        Raises:
+            ValidationError: If validation fails
+        """
+        # Validate the dataset dictionary
+        if "column_mapping" not in dataset_dict:
+            raise ValidationError("Missing column_mapping in dataset metadata")
+
+        if "metadata" not in dataset_dict:
+            raise ValidationError("Missing metadata in dataset metadata")
+
+        try:
+            validate_column_mapping(dataset_dict["column_mapping"])
+            validate_dataset_metadata(dataset_dict["metadata"])
+        except ValidationError as e:
+            logger.error(f"Dataset metadata validation failed: {str(e)}")
+            raise
+
+        self.datasets[name] = dataset_dict
         self.update_last_updated()
 
     def remove_dataset(self, name: str):

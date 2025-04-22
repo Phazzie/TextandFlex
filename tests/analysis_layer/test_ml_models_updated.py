@@ -160,4 +160,3 @@ def test_feature_extraction_empty_df():
     """Test feature extraction with an empty DataFrame."""
     features = extract_features(pd.DataFrame())
     assert features.empty
-

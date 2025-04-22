@@ -8,19 +8,32 @@
 - Added compressed pickle functionality to file_io.py
 - Implemented QueryEngine in query_engine.py for filtering and querying datasets
 - Implemented DatasetIndexer in indexer.py for faster data access
+- Implemented Dataset Metadata Validation in validation_schema.py
+- Implemented Complex Query Support in complex_query.py
 - Added comprehensive test suite for all new components
 
 ### Changed
 
-- Enhanced PhoneRecordDataset and RepositoryMetadata classes
-- Improved error handling in repository.py
+- Enhanced PhoneRecordDataset and RepositoryMetadata classes with validation
+- Improved error handling in repository.py with validation checks
 - Fixed repository.py to properly handle save/load failures
+- Added validation to all repository operations (add, update, merge)
 
 ### Fixed
 
 - Fixed DATA_DIR constant in config.py
 - Fixed repository tests to properly test error conditions
 - Fixed query_engine tests to properly mock repository behavior
+
+### Machine Learning Models and Analysis Layer
+
+- Added MLModel base class and implementations: TimePatternModel, ContactPatternModel, AnomalyDetectionModel
+- Added feature extraction utilities: extract_features, extract_features_batched (with column mapping support)
+- Implemented model persistence (save/load) and incremental learning (partial_fit, train_batched)
+- Comprehensive unit and integration tests for ML models, feature extraction, and persistence
+- Improved and expanded docstrings for all ML-related classes and functions
+- Added ML model usage documentation and examples to README
+- Performance and memory usage reviewed for large dataset handling (batched and parallel feature extraction)
 
 ## [2023-10-25] QA Improvements
 
@@ -96,6 +109,66 @@
 - Time distribution analysis (hourly, daily, monthly)
 - Statistical summaries with percentages and trends
 - Result formatting for different output formats
+
+## [2025-04-21] Dataset Metadata Validation Implementation
+
+### Added
+
+- Implemented `validation_schema.py` with validation functions for dataset metadata, column mappings, and dataset properties
+- Added comprehensive test suite for validation in `test_metadata_validation.py`
+- Implemented validation utilities for dataset properties
+
+### Changed
+
+- Enhanced `PhoneRecordDataset` and `RepositoryMetadata` classes with validation in `__post_init__`
+- Updated repository operations to validate inputs before processing
+- Added detailed validation error messages
+
+### Features
+
+- Schema validation for dataset metadata
+- Column mapping validation against required fields
+- Dataset property validation against column mappings
+- Validation during dataset creation, update, and merging
+- Fail-fast validation to prevent invalid data from corrupting the system
+
+## [2025-04-22] Complex Query Support Implementation
+
+### Added
+
+- Implemented `complex_query.py` with classes for advanced query operations
+  - `JoinOperation` for joining datasets on specified columns
+  - `ComplexFilter` for advanced filtering with multiple conditions
+  - `QueryBuilder` for constructing and executing complex queries
+- Added `query_utils.py` with utilities for building, optimizing, and validating queries
+- Added comprehensive test suite for complex queries in `test_complex_query.py`
+- Enhanced repository with methods for complex query operations
+
+### Changed
+
+- Updated `PhoneRecordRepository` with new methods:
+  - `complex_filter` for filtering with multiple conditions
+  - `filter_by_date_range` for date-based filtering
+  - `filter_by_values` for filtering by column values
+  - `join_datasets` for joining two datasets
+  - `execute_complex_query` for executing complex queries
+- Improved date range filtering to properly include end date
+- Enhanced column naming in aggregation results for better consistency
+
+### Features
+
+- Join operations between datasets (inner, left, right, outer)
+- Advanced filtering with multiple conditions and operators
+- Query building with method chaining
+- Date range filtering with automatic type conversion
+- Multi-column filtering with value lists
+- Query optimization for better performance
+- Comprehensive error handling and validation
+
+### Fixed
+
+- Fixed date range filtering to include the entire end date
+- Fixed column naming in aggregation results to ensure consistent naming
 
 ## [2025-04-20] Step 6 Implementation: CLI Interface
 

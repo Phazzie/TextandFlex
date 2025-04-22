@@ -104,3 +104,57 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Acknowledgments
 
 - Thanks to all contributors who have helped with the development of this tool.
+
+## Machine Learning Model Usage
+
+The analysis layer includes several machine learning models for pattern detection, anomaly detection, and contact grouping. These models are implemented in `src/analysis_layer/ml_models.py` and can be used as follows:
+
+### Feature Extraction
+
+Use the `extract_features` function to convert raw DataFrames into features suitable for ML models. You can provide a custom column mapping if your data uses different column names.
+
+```python
+from src.analysis_layer.ml_models import extract_features
+features = extract_features(df, column_mapping={'timestamp': 'Time', 'message_length': 'Len'})
+```
+
+### Training and Using ML Models
+
+```python
+from src.analysis_layer.ml_models import TimePatternModel, ContactPatternModel, AnomalyDetectionModel
+
+# Time-based pattern regression
+model = TimePatternModel()
+model.train(features, labels)
+predictions = model.predict(features)
+metrics = model.evaluate(test_features, test_labels)
+model.save('time_model.pkl')
+model.load('time_model.pkl')
+
+# Contact-based clustering
+contact_model = ContactPatternModel()
+contact_model.train(features)
+contact_preds = contact_model.predict(features)
+
+# Anomaly detection (supports incremental learning)
+anomaly_model = AnomalyDetectionModel()
+anomaly_model.train(features)
+# For large datasets, use batched/incremental training:
+for batch in extract_features_batched(df, batch_size=1000):
+    anomaly_model._partial_fit(batch)
+```
+
+### Model Persistence
+
+- Use `.save(path)` and `.load(path)` to persist models between sessions.
+
+### Incremental Learning
+
+- `AnomalyDetectionModel` supports incremental (batched) training via `_partial_fit`.
+- Use `train_batched` for efficient training on large datasets.
+
+### Notes
+
+- All models require features extracted with `extract_features` or `extract_features_batched`.
+- You can customize column mapping for different data sources.
+- See docstrings in `ml_models.py` for more details and examples.

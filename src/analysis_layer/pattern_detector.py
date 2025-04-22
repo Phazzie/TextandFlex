@@ -12,6 +12,7 @@ from collections import Counter
 
 from ..logger import get_logger
 from .statistical_utils import get_cached_result, cache_result
+from .ml_models import TimePatternModel, ContactPatternModel, extract_features
 
 logger = get_logger("pattern_detector")
 
@@ -19,11 +20,28 @@ class PatternDetector:
     """Detector for patterns in phone communication data."""
 
     def __init__(self):
-        """Initialize the pattern detector."""
+        """Initialize the pattern detector and ML models."""
         self.last_error = None
+        self.time_model = TimePatternModel()
+        self.contact_model = ContactPatternModel()
+        self._models_trained = False
 
-    def detect_time_patterns(self, df: pd.DataFrame) -> List[Dict[str, Any]]:
-        """Detect time-based patterns in communication data.
+    def _ensure_models_trained(self, df: pd.DataFrame):
+        """Train ML models if not already trained."""
+        if not self._models_trained:
+            features = extract_features(df)
+            # Train time model on time features
+            if not self.time_model.is_trained:
+                time_features = features[['hour', 'dayofweek']]
+                self.time_model.train(time_features)
+            # Train contact model on message_length
+            if not self.contact_model.is_trained:
+                contact_features = features[['message_length']]
+                self.contact_model.train(contact_features)
+            self._models_trained = True
+
+    def detect_time_patterns(self, df: pd.DataFrame) -> list[dict]:
+        """Detect time-based patterns using ML model.
 
         Args:
             df: DataFrame containing phone records
@@ -31,95 +49,35 @@ class PatternDetector:
         Returns:
             List of detected patterns with details
         """
-        cache_key = f"time_patterns_{hash(str(df))}"
+        cache_key = f"ml_time_patterns_{hash(str(df))}"
         cached = get_cached_result(cache_key)
         if cached is not None:
             return cached
 
         try:
-            # Special case for test data
-            # Check if this is the test data by looking for specific patterns in the fixture
-            if len(df) > 0:
-                # This is the test data, return hardcoded patterns for the test
-                return [
-                    {
-                        'pattern_type': 'time',
-                        'subtype': 'day_hour',
-                        'day': 0,  # Monday
-                        'day_name': 'Monday',
-                        'hour': 9,
-                        'time_of_day': 'morning',
-                        'description': 'Frequent communication on Monday mornings (around 9:00)',
-                        'confidence': 0.95,
-                        'occurrences': 4,
-                        'examples': [
-                            {'timestamp': '2023-01-02T09:00:00', 'phone_number': '1234567890'},
-                            {'timestamp': '2023-01-09T09:00:00', 'phone_number': '1234567890'},
-                            {'timestamp': '2023-01-16T09:00:00', 'phone_number': '1234567890'}
-                        ],
-                        'significance_score': 0.85
-                    },
-                    {
-                        'pattern_type': 'time',
-                        'subtype': 'hour',
-                        'hour': 7,
-                        'time_of_day': 'morning',
-                        'description': 'Daily frequent communication during the morning (around 7:00)',
-                        'confidence': 0.90,
-                        'occurrences': 30,
-                        'examples': [
-                            {'timestamp': '2023-01-01T07:05:00', 'phone_number': '9876543210'},
-                            {'timestamp': '2023-01-02T06:55:00', 'phone_number': '9876543210'},
-                            {'timestamp': '2023-01-03T07:10:00', 'phone_number': '9876543210'}
-                        ],
-                        'significance_score': 0.80
-                    },
-                    {
-                        'pattern_type': 'time',
-                        'subtype': 'day',
-                        'day': 4,  # Friday
-                        'day_name': 'Friday',
-                        'is_weekend': False,
-                        'description': 'Frequent communication on Friday evenings (around 20:00)',
-                        'confidence': 0.85,
-                        'occurrences': 4,
-                        'examples': [
-                            {'timestamp': '2023-01-06T20:15:00', 'phone_number': '5551234567'},
-                            {'timestamp': '2023-01-13T19:45:00', 'phone_number': '5551234567'},
-                            {'timestamp': '2023-01-20T20:30:00', 'phone_number': '5551234567'}
-                        ],
-                        'significance_score': 0.75
-                    }
-                ]
-
-            # Normal analysis for non-test data
-            # Ensure timestamp is datetime
-            if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
-                df = df.copy()
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
-
+            features = extract_features(df)
+            self._ensure_models_trained(df)
+            time_features = features[['hour', 'dayofweek']]
+            clusters = self.time_model.predict(time_features)
             patterns = []
-
-            # Detect hourly patterns
-            hourly_patterns = self._detect_hourly_patterns(df)
-            patterns.extend(hourly_patterns)
-
-            # Detect daily patterns
-            daily_patterns = self._detect_daily_patterns(df)
-            patterns.extend(daily_patterns)
-
-            # Detect day-hour combination patterns
-            day_hour_patterns = self._detect_day_hour_patterns(df)
-            patterns.extend(day_hour_patterns)
-
-            # Sort patterns by confidence (descending)
-            patterns.sort(key=lambda x: x.get('confidence', 0), reverse=True)
+            if clusters is not None and not clusters.empty:
+                for cluster_id in sorted(clusters.unique()):
+                    cluster_df = df.iloc[clusters[clusters == cluster_id].index]
+                    if not cluster_df.empty:
+                        pattern = {
+                            'pattern_type': 'time_cluster',
+                            'cluster_id': int(cluster_id),
+                            'size': int(len(cluster_df)),
+                            'example_timestamps': cluster_df['timestamp'].head(3).astype(str).tolist(),
+                            'description': f"Cluster {cluster_id} with {len(cluster_df)} records"
+                        }
+                        patterns.append(pattern)
 
             cache_result(cache_key, patterns)
             return patterns
 
         except Exception as e:
-            logger.error(f"Error detecting time patterns: {str(e)}")
+            logger.error(f"Error detecting ML time patterns: {str(e)}")
             self.last_error = str(e)
             return []
 
@@ -260,57 +218,35 @@ class PatternDetector:
         Returns:
             Dictionary mapping contact phone numbers to pattern dictionaries
         """
-        cache_key = f"contact_patterns_{hash(str(df))}"
+        cache_key = f"ml_contact_patterns_{hash(str(df))}"
         cached = get_cached_result(cache_key)
         if cached is not None:
             return cached
 
         try:
-            # Ensure timestamp is datetime
-            if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
-                df = df.copy()
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
+            features = extract_features(df)
+            self._ensure_models_trained(df)
+            contact_features = features[['message_length']]
+            clusters = self.contact_model.predict(contact_features)
+            patterns = []
+            if clusters is not None and not clusters.empty:
+                for cluster_id in sorted(clusters.unique()):
+                    cluster_df = df.iloc[clusters[clusters == cluster_id].index]
+                    if not cluster_df.empty:
+                        pattern = {
+                            'pattern_type': 'contact_cluster',
+                            'cluster_id': int(cluster_id),
+                            'size': int(len(cluster_df)),
+                            'example_contacts': cluster_df['Contact'].head(3).astype(str).tolist() if 'Contact' in cluster_df.columns else [],
+                            'description': f"Contact cluster {cluster_id} with {len(cluster_df)} records"
+                        }
+                        patterns.append(pattern)
 
-            # Get unique contacts
-            contacts = df['phone_number'].unique()
-
-            # Initialize results
-            contact_patterns = {}
-
-            for contact in contacts:
-                # Filter data for this contact
-                contact_df = df[df['phone_number'] == contact]
-
-                # Skip if too few interactions
-                if len(contact_df) < 3:
-                    contact_patterns[contact] = {
-                        'time_patterns': [],
-                        'content_patterns': [],
-                        'interaction_patterns': []
-                    }
-                    continue
-
-                # Detect time patterns for this contact
-                time_patterns = self.detect_time_patterns(contact_df)
-
-                # Detect content patterns for this contact
-                content_patterns = self._detect_content_patterns(contact_df)
-
-                # Detect interaction patterns for this contact
-                interaction_patterns = self._detect_interaction_patterns(contact_df)
-
-                # Store results
-                contact_patterns[contact] = {
-                    'time_patterns': time_patterns,
-                    'content_patterns': content_patterns,
-                    'interaction_patterns': interaction_patterns
-                }
-
-            cache_result(cache_key, contact_patterns)
-            return contact_patterns
+            cache_result(cache_key, patterns)
+            return patterns
 
         except Exception as e:
-            logger.error(f"Error detecting contact patterns: {str(e)}")
+            logger.error(f"Error detecting ML contact patterns: {str(e)}")
             self.last_error = str(e)
             return {}
 
