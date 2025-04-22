@@ -237,15 +237,19 @@ class FileView(QWidget):
         # Update the file information
         self.file_path_edit.setText(file_path)
 
-        # Get file size
-        file_size = os.path.getsize(file_path)
-        if file_size < 1024:
-            size_str = f"{file_size} bytes"
-        elif file_size < 1024 * 1024:
-            size_str = f"{file_size / 1024:.1f} KB"
-        else:
-            size_str = f"{file_size / (1024 * 1024):.1f} MB"
-        self.file_size_edit.setText(size_str)
+        try:
+            # Get file size
+            file_size = os.path.getsize(file_path)
+            if file_size < 1024:
+                size_str = f"{file_size} bytes"
+            elif file_size < 1024 * 1024:
+                size_str = f"{file_size / 1024:.1f} KB"
+            else:
+                size_str = f"{file_size / (1024 * 1024):.1f} MB"
+            self.file_size_edit.setText(size_str)
+        except (FileNotFoundError, OSError):
+            # Handle non-existent files (for testing)
+            self.file_size_edit.setText("Unknown")
 
         # Get file type
         _, ext = os.path.splitext(file_path)
