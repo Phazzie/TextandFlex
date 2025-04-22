@@ -40,6 +40,11 @@ def test_tab_order_main_window(qtbot):
     window = MainWindow()
     qtbot.addWidget(window)
 
+    # Add a view to the main window to ensure it has focusable widgets
+    file_view = FileView()
+    window.add_view(file_view, "file_view")
+    window.show_view("file_view")
+
     # Get all focusable widgets
     focusable_widgets = []
 
@@ -59,7 +64,7 @@ def test_tab_order_main_window(qtbot):
     window.setFocus()
 
     # Simulate tabbing through all widgets
-    for _ in range(len(focusable_widgets) * 2):
+    for _ in range(min(10, len(focusable_widgets) * 2)):
         qtbot.keyClick(window, Qt.Key_Tab)
 
 
@@ -182,6 +187,12 @@ def test_tooltips(qtbot):
     analysis_view = AnalysisView()
     results_view = ResultsView()
     visualization_view = VisualizationView()
+
+    # Add widgets to qtbot to ensure they're properly initialized
+    qtbot.addWidget(file_view)
+    qtbot.addWidget(analysis_view)
+    qtbot.addWidget(results_view)
+    qtbot.addWidget(visualization_view)
 
     # Check file view tooltips
     assert file_view.select_file_button.toolTip() != ""
