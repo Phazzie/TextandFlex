@@ -34,8 +34,13 @@ class FileView(QWidget):
     # Signals
     file_selected = Signal(str)  # Emitted when a file is selected
 
-    def __init__(self, parent=None):
-        """Initialize the file view."""
+    def __init__(self, file_controller=None, parent=None):
+        """Initialize the file view.
+
+        Args:
+            file_controller: The file controller to use
+            parent: The parent widget
+        """
         super().__init__(parent)
 
         # Enable drag and drop
@@ -46,6 +51,18 @@ class FileView(QWidget):
 
         # Current file path
         self.current_file_path = None
+
+        # Set up the file controller
+        self.file_controller = file_controller
+
+        # Connect signals if controller is provided
+        if self.file_controller:
+            # Connect view signals to controller methods
+            self.file_selected.connect(self.file_controller.load_file)
+
+            # Connect controller signals to view methods
+            self.file_controller.file_loaded.connect(self.on_file_loaded)
+            self.file_controller.file_load_failed.connect(self.on_file_load_failed)
 
     def _init_ui(self):
         """Initialize the UI components."""
@@ -274,6 +291,48 @@ class FileView(QWidget):
             count (int): The number of records in the file
         """
         self.record_count_edit.setText(str(count))
+
+    @Slot(object)
+    def on_file_loaded(self, file_model):
+        """
+        Handle the file_loaded signal from the controller.
+
+        Args:
+            file_model: The loaded file model
+        """
+        # Update the file information
+        self.file_path_edit.setText(file_model.file_path)
+        self.file_size_edit.setText(file_model.file_size_formatted)
+        self.file_type_edit.setText(file_model.file_type)
+        self.record_count_edit.setText(str(file_model.record_count))
+
+        # Show a success message
+        QMessageBox.information(
+            self,
+            "File Loaded",
+            f"File '{file_model.file_name}' loaded successfully with {file_model.record_count} records."
+        )
+
+    @Slot(str)
+    def on_file_load_failed(self, error_message):
+        """
+        Handle the file_load_failed signal from the controller.
+
+        Args:
+            error_message: The error message
+        """
+        # Show an error message
+        QMessageBox.critical(
+            self,
+            "File Load Error",
+            f"Failed to load file: {error_message}"
+        )
+
+        # Clear the file information
+        self.file_path_edit.clear()
+        self.file_size_edit.clear()
+        self.file_type_edit.clear()
+        self.record_count_edit.clear()
 
 
 # For testing purposes

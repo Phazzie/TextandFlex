@@ -235,10 +235,10 @@ This plan focuses on implementing the UI components, improving the user experien
 - [ ] Create new integration branch `new-gui-integration` from `new-gui-core-functionality`
 - [ ] Implement integration in small, testable increments:
 
-  1. [ ] Integrate file selection components first
-     - [ ] Connect FileController to FileView
-     - [ ] Test file selection end-to-end
-     - [ ] Verify error handling across boundaries
+  1. [x] Integrate file selection components first
+     - [x] Connect FileController to FileView
+     - [x] Test file selection end-to-end
+     - [x] Verify error handling across boundaries
   2. [ ] Integrate analysis components next
      - [ ] Connect AnalysisController to AnalysisView
      - [ ] Test analysis workflow end-to-end

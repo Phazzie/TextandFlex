@@ -59,7 +59,7 @@ def main():
 
         # Initialize views
         main_window = MainWindow()
-        file_view = FileView()
+        file_view = FileView(file_controller=file_controller)
         analysis_view = AnalysisView()
         results_view = ResultsView()
         visualization_view = VisualizationView()
@@ -72,9 +72,9 @@ def main():
 
         # Connect signals and slots
         # File view connections
-        file_view.file_selected.connect(file_controller.load_file)
+        # The file_view already has connections to the file_controller
+        # We just need to connect the file_loaded signal to show the analysis view
         file_controller.file_loaded.connect(lambda file_model: main_window.show_view("analysis_view"))
-        file_controller.file_load_failed.connect(lambda error: show_error_dialog("File Load Error", error))
 
         # Analysis view connections
         analysis_view.analysis_requested.connect(lambda analysis_type, options:
