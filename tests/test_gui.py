@@ -141,7 +141,8 @@ def test_data_table_widget(qtbot):
     qtbot.addWidget(widget)
 
     # Check that the widget has the correct properties
-    assert widget.selectionBehavior() == 1  # QAbstractItemView.SelectRows
+    from PySide6.QtWidgets import QAbstractItemView
+    assert widget.selectionBehavior() == QAbstractItemView.SelectRows
     assert widget.alternatingRowColors() is True
 
     # Test setting the data
