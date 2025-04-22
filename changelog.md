@@ -186,3 +186,67 @@
 - Support for different output formats (table, JSON, text)
 - Interactive mode with command history and tab completion
 - Extensible command system for future features
+
+## [2025-04-22] GUI Core Functionality (Plan A)
+
+### Added
+
+- Created new branch `new-gui-core-functionality` for GUI core work
+- Set up directory structure for controllers, models, utils, and app.py under src/presentation_layer/gui/
+- Installed PySide6 and added to requirements.txt
+- Implemented robust error handling system (severity levels, logging, sanitization, user dialogs)
+- Implemented file validation system (extension, size, path traversal, content/headers)
+- Added unit tests for error handling and file validation (pytest-qt)
+- Implemented FileController and AnalysisController with Qt signals/slots, background processing, and error handling
+- Added unit tests for FileController and AnalysisController
+
+### Changed
+
+- Updated implementation plan and checklist to reflect completed core infrastructure and controller work
+
+### Next
+
+- Scaffold AppController, data models, and integration points
+- Document interface contracts for UI team
+- Continue QA and integration testing
+
+## [2025-04-22] GUI UI Components and User Experience (Plan B)
+
+### Added
+
+- Created new branch `new-gui-ui-components` for UI components work
+- Set up directory structure for views, ui, resources, stylesheets, and widgets under src/presentation_layer/gui/
+- Implemented UI constants in stylesheets/constants.py (colors, dimensions, typography, animation, z-index)
+- Implemented UI conversion utilities in ui/ui_converter.py for Qt Designer integration
+- Implemented resource compilation utilities in resources/resource_compiler.py
+- Implemented core UI components:
+  - MainWindow with menu, toolbar, and status bar
+  - FileView with drag-and-drop support
+  - AnalysisView with options and progress tracking
+  - ResultsView with sorting, filtering, and pagination
+  - VisualizationView with matplotlib integration
+- Implemented custom widgets:
+  - DataTableWidget with enhanced features
+- Added comprehensive test suite for UI components (pytest-qt)
+- Created run_gui.py script for launching the application
+
+### Changed
+
+- Updated requirements.txt to include PySide6 and pytest-qt
+- Enhanced app.py to integrate all UI components
+
+### Features
+
+- Modern, responsive UI with proper layout management
+- File selection with drag-and-drop support
+- Analysis options with progress tracking
+- Results display with sorting, filtering, and pagination
+- Data visualization with matplotlib integration
+- Proper error handling and user feedback
+
+### Next
+
+- Implement theme system with light and dark modes
+- Add accessibility features
+- Create user onboarding experience
+- Implement user preferences
