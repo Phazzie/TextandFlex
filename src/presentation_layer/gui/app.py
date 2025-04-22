@@ -47,6 +47,8 @@ def main():
         repository = PhoneRecordRepository()
 
         # Create parser with flexible configuration to handle various data formats
+        # This configuration allows the parser to work with different Excel formats
+        # including those with separate date/time columns or without message content
         parser = ExcelParser(
             required_columns=['timestamp', 'phone_number', 'message_type'],
             auto_map_columns=True,
