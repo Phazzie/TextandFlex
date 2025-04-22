@@ -233,7 +233,8 @@ class ResultsView(QWidget):
         Args:
             index (int): The index of the selected page size
         """
-        self.page_size = self.page_size_combo.currentData()
+        data = self.page_size_combo.currentData()
+        self.page_size = data if data is not None else 50  # Default to 50 if None
         self.current_page = 0
         self._update_pagination()
 
