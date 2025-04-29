@@ -62,25 +62,24 @@ def test_validate_excel_file():
 def test_validate_dataframe_columns():
     """Test validation of DataFrame columns."""
     from src.utils.validators import validate_dataframe_columns
-    
-    # Create test DataFrames
+      # Create test DataFrames
     df_valid = pd.DataFrame({
         'timestamp': ['2023-01-01 12:00:00'],
         'phone_number': ['1234567890'],
-        'message_type': ['sent'],
-        'message_content': ['Hello, world!']
+        'message_type': ['sent']
+        # message_content is no longer required
     })
     
     df_missing_column = pd.DataFrame({
         'timestamp': ['2023-01-01 12:00:00'],
-        'phone_number': ['1234567890'],
-        'message_content': ['Hello, world!']
+        'phone_number': ['1234567890']
+        # missing message_type
     })
     
     df_empty = pd.DataFrame()
     
     # Define required columns
-    required_columns = ['timestamp', 'phone_number', 'message_type', 'message_content']
+    required_columns = ['timestamp', 'phone_number', 'message_type']
     
     # Test with valid DataFrame
     validate_dataframe_columns(df_valid, required_columns)
@@ -153,29 +152,25 @@ def test_validate_dataframe_values():
     df_valid = pd.DataFrame({
         'timestamp': ['2023-01-01 12:00:00'],
         'phone_number': ['1234567890'],
-        'message_type': ['sent'],
-        'message_content': ['Hello, world!']
+        'message_type': ['sent']
     })
     
     df_invalid_phone = pd.DataFrame({
         'timestamp': ['2023-01-01 12:00:00'],
         'phone_number': ['abc'],  # Invalid phone
-        'message_type': ['sent'],
-        'message_content': ['Hello, world!']
+        'message_type': ['sent']
     })
     
     df_invalid_timestamp = pd.DataFrame({
         'timestamp': ['invalid'],  # Invalid timestamp
         'phone_number': ['1234567890'],
-        'message_type': ['sent'],
-        'message_content': ['Hello, world!']
+        'message_type': ['sent']
     })
     
     df_invalid_message_type = pd.DataFrame({
         'timestamp': ['2023-01-01 12:00:00'],
         'phone_number': ['1234567890'],
-        'message_type': ['draft'],  # Invalid message type
-        'message_content': ['Hello, world!']
+        'message_type': ['draft']  # Invalid message type
     })
     
     # Define validation parameters

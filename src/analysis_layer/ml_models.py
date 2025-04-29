@@ -95,6 +95,7 @@ class MLModel:
         self._is_trained = False
         self._supports_partial_fit = False
         self._training_progress = 0.0
+        self._version = "0.1.0"  # Semantic versioning: major.minor.patch
 
     def train(self, features: pd.DataFrame, labels: pd.Series = None):
         """Train the model. Labels are optional for unsupervised models."""
@@ -343,6 +344,33 @@ class MLModel:
         """Get the last error message."""
         return self._last_error
 
+    @property
+    def version(self) -> str:
+        """Get the model version."""
+        return self._version
+
+    def bump_version(self, level="patch"):
+        """Bump the model version according to semantic versioning.
+
+        Args:
+            level: The version level to bump ("major", "minor", or "patch")
+        """
+        major, minor, patch = map(int, self._version.split("."))
+
+        if level == "major":
+            major += 1
+            minor = 0
+            patch = 0
+        elif level == "minor":
+            minor += 1
+            patch = 0
+        else:  # patch
+            patch += 1
+
+        self._version = f"{major}.{minor}.{patch}"
+        logger.info(f"Bumped {self.__class__.__name__} version to {self._version}")
+        return self._version
+
     def save(self, file_path: Union[str, Path]):
         """Save the trained model to a file."""
         if not self._is_trained or self.model is None:
@@ -352,8 +380,15 @@ class MLModel:
         try:
             path = Path(file_path) if isinstance(file_path, str) else file_path
             ensure_directory_exists(path.parent)
-            joblib.dump(self.model, path)
-            logger.info(f"Saved {self.__class__.__name__} model to {path}")
+            # Save model and metadata
+            model_data = {
+                'model': self.model,
+                'version': self._version,
+                'class_name': self.__class__.__name__,
+                'timestamp': datetime.now().isoformat()
+            }
+            joblib.dump(model_data, path)
+            logger.info(f"Saved {self.__class__.__name__} model version {self._version} to {path}")
             return True
         except Exception as e:
             logger.error(f"Error saving {self.__class__.__name__} model to {file_path}: {e}")
@@ -369,10 +404,23 @@ class MLModel:
                 self._last_error = "Model file not found."
                 self._is_trained = False
                 return False
-            self.model = joblib.load(path)
+
+            # Load the model data
+            model_data = joblib.load(path)
+
+            # Handle both new format (with metadata) and old format (just the model)
+            if isinstance(model_data, dict) and 'model' in model_data:
+                self.model = model_data['model']
+                # Load version if available
+                if 'version' in model_data:
+                    self._version = model_data['version']
+            else:
+                # Old format - just the model
+                self.model = model_data
+
             self._is_trained = True
             self._last_error = None
-            logger.info(f"Loaded {self.__class__.__name__} model from {path}")
+            logger.info(f"Loaded {self.__class__.__name__} model version {self._version} from {path}")
             return True
         except Exception as e:
             logger.error(f"Error loading {self.__class__.__name__} model from {file_path}: {e}")
@@ -1074,6 +1122,117 @@ def run_model_evaluation(model: MLModel, test_features: pd.DataFrame, test_label
 
 # Keep backward compatibility with old function name
 evaluate_model = run_model_evaluation
+
+def extract_advanced_features(df: pd.DataFrame, column_mapping: Dict = None) -> pd.DataFrame:
+    """
+    Extract advanced features for ML models from the raw data, using column mapping.
+    Extends the basic extract_features function with more sophisticated features.
+
+    Args:
+        df: Input DataFrame with raw data.
+        column_mapping: Optional mapping of logical column names to actual DataFrame columns.
+
+    Returns:
+        DataFrame with extracted features including basic features plus advanced ones:
+        - time_since_last: Time since last communication (in hours)
+        - response_time: Response time for messages (in hours)
+        - activity_density: Number of messages per day
+        - contact_frequency: Frequency of communication with each contact
+        - weekday_pattern: Pattern of activity across weekdays
+        - hour_pattern: Pattern of activity across hours
+
+    Example:
+        >>> features = extract_advanced_features(df, column_mapping={'timestamp': 'Time', 'phone_number': 'Contact'})
+    """
+    # First get basic features
+    features = extract_features(df, column_mapping)
+    if features.empty:
+        return features
+
+    # Get column mappings
+    mapping = {**DEFAULT_COLUMN_MAPPING, **(column_mapping or {})}
+    col_lookup = {col.lower(): col for col in df.columns}
+
+    def find_column(key):
+        mapped_val = mapping.get(key)
+        if mapped_val and mapped_val.lower() in col_lookup:
+            return col_lookup[mapped_val.lower()]
+        if key.lower() in col_lookup:
+            return col_lookup[key.lower()]
+        return None
+
+    try:
+        ts_col = find_column('timestamp')
+        phone_col = find_column('phone_number')
+        direction_col = find_column('direction')
+
+        if ts_col and ts_col in df.columns:
+            df_copy = df.copy()
+            df_copy[ts_col] = pd.to_datetime(df_copy[ts_col], errors='coerce')
+
+            # Sort by timestamp
+            df_sorted = df_copy.sort_values(by=ts_col)
+
+            # Calculate time since last communication (overall)
+            df_sorted['prev_timestamp'] = df_sorted[ts_col].shift(1)
+            df_sorted['time_diff'] = (df_sorted[ts_col] - df_sorted['prev_timestamp']).dt.total_seconds() / 3600  # hours
+            features['time_since_last'] = df_sorted['time_diff'].fillna(0).astype(int)
+
+            # Calculate response times if direction column exists
+            if direction_col and direction_col in df.columns:
+                # Group by conversation (direction changes)
+                df_sorted['direction_changed'] = df_sorted[direction_col] != df_sorted[direction_col].shift(1)
+                df_sorted['conversation_id'] = df_sorted['direction_changed'].cumsum()
+
+                # Calculate response time within each conversation
+                response_times = []
+                for _, group in df_sorted.groupby('conversation_id'):
+                    if len(group) > 1:
+                        # First message in group has no response time
+                        group_times = [0]
+                        # For subsequent messages, calculate time since previous
+                        for i in range(1, len(group)):
+                            time_diff = (group.iloc[i][ts_col] - group.iloc[i-1][ts_col]).total_seconds() / 3600
+                            group_times.append(time_diff)
+                        response_times.extend(group_times)
+                    else:
+                        response_times.append(0)
+
+                # Add to features
+                features['response_time'] = pd.Series(response_times, index=df_sorted.index).fillna(0).astype(int)
+
+            # Calculate activity density (messages per day)
+            if len(df_sorted) > 1:
+                date_counts = df_sorted.groupby(df_sorted[ts_col].dt.date).size()
+                date_mapping = {date: count for date, count in date_counts.items()}
+                features['activity_density'] = df_sorted[ts_col].dt.date.map(date_mapping).fillna(0).astype(int)
+            else:
+                features['activity_density'] = 1
+
+            # Calculate weekday and hour patterns
+            features['weekday_pattern'] = df_sorted[ts_col].dt.dayofweek
+            features['hour_pattern'] = df_sorted[ts_col].dt.hour
+
+            # Calculate contact frequency if phone_number column exists
+            if phone_col and phone_col in df.columns:
+                contact_counts = df_sorted.groupby(phone_col).size()
+                contact_mapping = {contact: count for contact, count in contact_counts.items()}
+                features['contact_frequency'] = df_sorted[phone_col].map(contact_mapping).fillna(0).astype(int)
+
+        # Ensure all numeric columns are properly typed
+        for col in features.columns:
+            if col not in ['hour', 'dayofweek', 'is_weekend', 'message_length']:
+                features[col] = pd.to_numeric(features[col], errors='coerce').fillna(0).astype(int)
+
+        logger.info(f"Extracted advanced features: {list(features.columns)}")
+
+    except Exception as e:
+        logger.error(f"Error extracting advanced features: {e}")
+        # Return basic features if advanced extraction fails
+        return extract_features(df, column_mapping)
+
+    return features
+
 
 # TODO: Add functions for model management (saving/loading multiple models)
 # def save_all_models(models: Dict[str, MLModel], directory: str):

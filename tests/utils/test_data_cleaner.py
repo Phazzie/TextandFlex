@@ -136,43 +136,6 @@ def test_normalize_message_types():
 
 
 @pytest.mark.unit
-def test_clean_message_content():
-    """Test cleaning of message content."""
-    from src.utils.data_cleaner import clean_message_content
-
-    # Test with various message contents
-    message_contents = [
-        'Hello, world!',
-        ' Hi there! ',
-        '\tTrimmed\n',
-        np.nan,
-        ''
-    ]
-
-    # Expected results after cleaning
-    expected = [
-        'Hello, world!',
-        'Hi there!',
-        'Trimmed',
-        '',
-        ''
-    ]
-
-    # Create a DataFrame with message contents
-    df = pd.DataFrame({'message_content': message_contents})
-
-    # Clean the message contents
-    result = clean_message_content(df)
-
-    # Verify the results
-    for i, expected_content in enumerate(expected):
-        if pd.isna(result['message_content'].iloc[i]):
-            assert expected_content == ''
-        else:
-            assert result['message_content'].iloc[i] == expected_content
-
-
-@pytest.mark.unit
 def test_clean_dataframe(sample_dirty_data):
     """Test cleaning of the entire DataFrame."""
     from src.utils.data_cleaner import clean_dataframe

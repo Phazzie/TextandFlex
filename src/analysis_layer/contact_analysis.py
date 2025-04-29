@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 
 from ..logger import get_logger
+from ..utils.data_utils import safe_get_column
 from .statistical_utils import (
     calculate_response_times,
     calculate_conversation_gaps,
@@ -135,10 +136,17 @@ class ContactAnalyzer:
             return cached
 
         try:
+            # Use safe_get_column to get the timestamp column
+            timestamp_col = safe_get_column(df, 'timestamp')
+
+            # Check if we got valid timestamps
+            if timestamp_col.isna().all():
+                return {}
+
             # Ensure timestamp is datetime
-            if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
-                df = df.copy()
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.copy()
+            if not pd.api.types.is_datetime64_any_dtype(timestamp_col):
+                df['timestamp'] = pd.to_datetime(timestamp_col)
 
             # Get unique contacts
             contacts = df['phone_number'].unique()
@@ -226,10 +234,17 @@ class ContactAnalyzer:
             return cached
 
         try:
+            # Use safe_get_column to get the timestamp column
+            timestamp_col = safe_get_column(df, 'timestamp')
+
+            # Check if we got valid timestamps
+            if timestamp_col.isna().all():
+                return {}
+
             # Ensure timestamp is datetime
-            if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
-                df = df.copy()
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.copy()
+            if not pd.api.types.is_datetime64_any_dtype(timestamp_col):
+                df['timestamp'] = pd.to_datetime(timestamp_col)
 
             # Get unique contacts
             contacts = df['phone_number'].unique()
@@ -387,9 +402,8 @@ class ContactAnalyzer:
         patterns = []
 
         try:
-            # Check if message_content column exists
-            if 'message_content' not in df.columns:
-                return patterns
+            # Content patterns are not supported as message_content is not available
+            return patterns
 
             # Skip if too many missing values
             if df['message_content'].isna().sum() / len(df) > 0.5:

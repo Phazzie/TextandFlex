@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from typing import List
 from src.utils.validators import validate_dataframe_columns
+from src.utils.data_utils import detect_excel_format
 
 ALLOWED_EXTENSIONS = {".xlsx", ".csv"}
 MAX_FILE_SIZE_MB = 10
@@ -46,7 +47,9 @@ def validate_file_content(file_path: str, required_columns: List[str] = None):
             raise FileValidationError("Unsupported file extension for content validation.")
     except Exception as exc:
         raise FileValidationError(f"Failed to read file: {exc}") from exc
+
     try:
+        # This will automatically handle Excel-specific format
         validate_dataframe_columns(df, required_columns)
     except Exception as exc:
         raise FileValidationError(f"Missing required columns: {exc}") from exc

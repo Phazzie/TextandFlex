@@ -89,7 +89,7 @@ class FileModel:
 
     def _validate(self):
         # Fail fast: ensure required columns exist
-        required = {'timestamp', 'phone_number', 'message_type', 'message_content'}
+        required = {'timestamp', 'phone_number', 'message_type'}
         missing = required - set(self._columns)
         if missing:
             raise ValueError(f"Missing required columns: {missing}")

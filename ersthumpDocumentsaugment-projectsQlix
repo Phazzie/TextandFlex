@@ -1,0 +1,44 @@
+* [33m9a19013[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mnew-gui-integration[m[33m, [m[1;31morigin/new-gui-integration[m[33m)[m Add dependency injection and logging to controller factory
+[31m|[m *   [33m7014650[m[33m ([m[1;31morigin/main[m[33m)[m Merge pull request #2: GUI Integration
+[31m|[m [32m|[m[31m\[m  
+[31m|[m [32m|[m[31m/[m  
+[31m|[m[31m/[m[32m|[m   
+* [32m|[m [33meed92d0[m Integrate results display and visualization components
+* [32m|[m [33ma3cb810[m Integrate analysis components
+* [32m|[m [33m2d98675[m Integrate file selection components
+* [32m|[m [33mbf07f82[m[33m ([m[1;31morigin/new-gui-core-functionality[m[33m, [m[1;32mnew-gui-core-functionality[m[33m)[m Add comprehensive integration tests for GUI components
+* [32m|[m [33mc449cc1[m GUI core integration
+* [32m|[m [33mf55a461[m Implement GUI core functionality integration
+* [32m|[m [33m023101e[m Update changelog with GUI UI Components Implementation
+* [32m|[m [33md35ac04[m Update GUI implementation plan checklist to reflect completed UI components and tests
+* [32m|[m [33mec3ad18[m Fix accessibility tests to properly initialize widgets
+* [32m|[m [33m7f4f55f[m Fix recursive dependency in qapp fixture in test_gui_accessibility.py
+* [32m|[m [33mdb4c011[m Fix test_gui_integration.py to use individual components instead of Application class
+* [32m|[m [33m7ff34dd[m Fix test_results_view_pagination test to be more flexible
+* [32m|[m [33mf4e3470[m Fix ResultsView._on_page_size_changed method to handle None values
+* [32m|[m [33md8504b6[m Fix test_results_view_filtering test to be more flexible
+* [32m|[m [33mc128a3f[m Fix FileView._set_file method to handle non-existent files in test mode
+* [32m|[m [33me50a640[m Fix recursive dependency in qapp fixtures in all test files
+* [32m|[m [33mc420c9b[m Fix selectionBehavior assertion in test_data_table_widget
+* [32m|[m [33mb196582[m Fix Qt orientation parameter in headerData calls and handle None column in filter
+* [32m|[m [33me493a0a[m Fix recursive dependency in qapp fixture
+* [32m|[m [33m23366b1[m Fix QAction import in data_table_widget.py
+* [32m|[m [33m015db49[m Fix Animation class in constants.py to use integer values for easing curves
+* [32m|[m [33m347f8d9[m Fix Animation class in constants.py to use correct Qt easing curve
+* [32m|[m [33m76aeb54[m Add tooltips to UI components and implement comprehensive test suite
+* [32m|[m [33mefea46c[m Update implementation plan and changelog to remove theme system and focus on testing
+* [32m|[m [33m85bfdbb[m Fix QAction import in main_window.py
+* [32m|[m [33mb98208d[m Implement GUI UI Components and User Experience (Plan B)
+* [32m|[m [33mc60ffef[m[33m ([m[1;31morigin/add-gui[m[33m, [m[1;32mnew-gui-ui-components[m[33m, [m[1;32madd-gui[m[33m)[m Add GUI to the application
+[32m|[m[32m/[m  
+* [33m2605193[m Initial commit to TextandFlex: all current phone_analyzer code and history
+* [33m72ba731[m Update changelog with Step 4 and Step 6 implementations
+*   [33m3e30adb[m Merge CLI interface implementation from add-cli-interface branch
+[34m|[m[35m\[m  
+[34m|[m * [33m74e461d[m[33m ([m[1;31morigin/add-cli-interface[m[33m)[m Add CLI interface
+* [35m|[m [33mac8d555[m Implement Step 5: Contact and Time-Based Analysis
+[35m|[m[35m/[m  
+* [33mfb09281[m Update README.md for TextyMcTextface repository
+* [33m78919e6[m Update README.md for TexttheNext project
+* [33m614ccf7[m Initial commit with project setup and data parsing module
+* [33mbae3ecc[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m Initial commit with documentation and codebase

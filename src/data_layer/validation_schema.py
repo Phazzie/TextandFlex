@@ -19,6 +19,9 @@ REQUIRED_METADATA_FIELDS = ["created_at", "record_count", "columns"]
 # Required fields for column mapping
 REQUIRED_COLUMN_MAPPING_FIELDS = ["timestamp", "phone_number", "message_type"]
 
+# Excel specific fields (from the actual data format)
+EXCEL_SPECIFIC_FIELDS = ["line", "date", "time", "direction"]
+
 def validate_dataset_metadata(metadata: Dict[str, Any]) -> bool:
     """Validate dataset metadata against the schema.
 
@@ -127,7 +130,15 @@ def validate_dataset_properties(data: pd.DataFrame, column_mapping: Dict[str, st
         logger.error(error_msg)
         raise ValidationError(error_msg)
 
-    # Check if required columns from column mapping are in DataFrame
+    # Check for Excel-specific format (Date and Time columns)
+    excel_format = all(field in data.columns for field in ['Date', 'Time', 'To/From', 'Message Type'])
+
+    if excel_format:
+        # For Excel format, we'll create a timestamp column later
+        logger.info("Detected Excel-specific format with Date and Time columns")
+        return True
+
+    # For standard format, check required columns
     missing_columns = []
     for column in REQUIRED_COLUMN_MAPPING_FIELDS:
         if column in column_mapping and column not in data.columns:
@@ -137,7 +148,6 @@ def validate_dataset_properties(data: pd.DataFrame, column_mapping: Dict[str, st
         error_msg = f"Required columns not found in dataset: {', '.join(missing_columns)}"
         logger.error(error_msg)
         raise ValidationError(error_msg)
-
 
     return True
 

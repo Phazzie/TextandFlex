@@ -1,0 +1,23 @@
+
+=== Running ResponseAnalyzer Integration Test ===
+
+Creating test data...
+Created dataset with 8 records
+
+Initializing ResponseAnalyzer and PatternDetector...
+
+Running ResponseAnalyzer.analyze_response_patterns() directly...
+SUCCESS: ResponseAnalyzer ran without errors
+Avg response time: 2310.0 seconds
+Quick responders: 2
+Delayed responders: 1
+
+Running PatternDetector.detect_all_patterns()...
+SUCCESS: PatternDetector integrated with ResponseAnalyzer without errors
+
+Found 3 response patterns in results:
+1. [response_time] average: Average response time is 2310.0 seconds
+2. [response_time] quick_responder: High ratio of quick responses (50.0%)
+3. [response_time] delayed_responder: High ratio of delayed responses (25.0%)
+
+=== Integration Test Complete ===

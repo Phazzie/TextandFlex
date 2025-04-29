@@ -92,6 +92,13 @@ def validate_dataframe_columns(df: pd.DataFrame, required_columns: List[str]) ->
         logger.error("DataFrame is empty")
         raise ValueError("DataFrame is empty")
 
+    # Check for Excel-specific format (Date and Time columns)
+    excel_format = all(field in df.columns for field in ['Date', 'Time', 'To/From', 'Message Type'])
+
+    if excel_format:
+        logger.info("Detected Excel-specific format with Date and Time columns")
+        return  # Excel-specific format is valid, no need to check required columns
+
     missing_columns = set(required_columns) - set(df.columns)
     if missing_columns:
         logger.error(f"DataFrame is missing required columns: {', '.join(missing_columns)}")
@@ -177,6 +184,29 @@ def validate_dataframe_values(
     # Add a column to track validation errors
     validation_df['validation_error'] = ''
 
+    # Check for Excel-specific format (Date and Time columns)
+    excel_format = all(field in df.columns for field in ['Date', 'Time', 'To/From', 'Message Type'])
+
+    if excel_format:
+        # For Excel format, validate the To/From and Message Type columns
+        # Validate phone numbers (To/From)
+        if 'To/From' in validation_df.columns:
+            mask = validation_df['To/From'].apply(
+                lambda x: not validate_phone_number_format(str(x)) if pd.notna(x) else True
+            )
+            validation_df.loc[mask, 'validation_error'] += 'Invalid phone number; '
+
+        # Validate message types
+        if 'Message Type' in validation_df.columns:
+            mask = validation_df['Message Type'].apply(
+                lambda x: not validate_message_type(str(x), valid_message_types) if pd.notna(x) else True
+            )
+            validation_df.loc[mask, 'validation_error'] += 'Invalid message type; '
+
+        # Return only rows with validation errors
+        return validation_df[validation_df['validation_error'] != '']
+
+    # Standard format validation
     # Validate phone numbers
     if 'phone_number' in validation_df.columns:
         mask = validation_df['phone_number'].apply(

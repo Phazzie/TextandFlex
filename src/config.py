@@ -28,7 +28,20 @@ DEFAULT_CONFIG = {
     "data": {
         "excel": {
             "required_columns": ["timestamp", "phone_number", "message_type"],
-            "date_format": "%Y-%m-%d %H:%M:%S"
+            "date_format": "%Y-%m-%d %H:%M:%S",
+            "excel_specific": {
+                "required_columns": ["Line", "Date", "Time", "Direction", "To/From", "Message Type"],
+                "date_format": "%m/%d/%Y",
+                "time_format": "%I:%M %p",
+                "column_mapping": {
+                    "Line": "line",
+                    "Date": "date",
+                    "Time": "time",
+                    "Direction": "direction",
+                    "To/From": "phone_number",
+                    "Message Type": "message_type"
+                }
+            }
         },
         "repository": {
             "storage_path": "./data",

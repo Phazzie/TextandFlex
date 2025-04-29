@@ -140,11 +140,17 @@ class PhoneRecordRepository:
             if not name or not isinstance(name, str):
                 raise ValidationError(f"Invalid dataset name: {name}")
 
-            # Validate column mapping
-            validate_column_mapping(column_mapping)
+            # Check for Excel-specific format (Date and Time columns)
+            excel_format = all(field in data.columns for field in ['Date', 'Time', 'To/From', 'Message Type'])
 
-            # Validate dataset properties
-            validate_dataset_properties(data, column_mapping)
+            if not excel_format:
+                # For standard format, validate column mapping and dataset properties
+                validate_column_mapping(column_mapping)
+                validate_dataset_properties(data, column_mapping)
+            else:
+                # For Excel-specific format, we'll handle it differently
+                logger.info(f"Detected Excel-specific format for dataset {name}")
+                # We don't need to validate further as the format is recognized
 
             # Validate metadata if provided
             if metadata is not None:

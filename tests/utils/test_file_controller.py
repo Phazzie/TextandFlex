@@ -19,7 +19,7 @@ def file_controller(monkeypatch):
 
 def test_file_validated_signal_emitted(tmp_path, file_controller, qtbot):
     file_path = tmp_path / "test.csv"
-    file_path.write_text("timestamp,phone_number,message_type,message_content\n1,2,3,4\n")
+    file_path.write_text("timestamp,phone_number,message_type\n1,2,3\n")
     spy = qtbot.waitSignal(file_controller.file_validated, raising=False)
     file_controller.select_and_validate_file(str(file_path))
     assert spy.args[0] == str(file_path)

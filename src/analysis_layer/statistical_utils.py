@@ -376,3 +376,82 @@ def set_cache_expiry(seconds: int) -> None:
 def clear_cache() -> None:
     """Clear the result cache."""
     _result_cache.clear()
+
+def calculate_outliers_iqr(data, k=1.5):
+    """Calculate outliers using the Interquartile Range (IQR) method.
+
+    Args:
+        data: Array-like data to analyze
+        k: Multiplier for IQR (default: 1.5)
+
+    Returns:
+        List of indices of outliers in the data
+    """
+    try:
+        # Convert to numpy array for calculations
+        data_array = np.array(data)
+
+        # Calculate Q1, Q3, and IQR
+        q1 = np.percentile(data_array, 25)
+        q3 = np.percentile(data_array, 75)
+        iqr = q3 - q1
+
+        # Calculate lower and upper bounds
+        lower_bound = q1 - k * iqr
+        upper_bound = q3 + k * iqr
+
+        # Find outliers
+        outlier_indices = np.where((data_array < lower_bound) | (data_array > upper_bound))[0]
+
+        return outlier_indices.tolist()
+
+    except Exception as e:
+        logger.error(f"Error calculating outliers: {str(e)}")
+        return []
+
+def calculate_distribution_stats(data):
+    """Calculate distribution statistics for a dataset.
+
+    Args:
+        data: Array-like data to analyze
+
+    Returns:
+        Dictionary with distribution statistics
+    """
+    try:
+        # Convert to numpy array for calculations
+        data_array = np.array(data)
+
+        if len(data_array) == 0:
+            return {
+                "min": None,
+                "25%": None,
+                "50%": None,
+                "75%": None,
+                "max": None,
+                "count": 0
+            }
+
+        # Calculate percentiles
+        percentiles = [0, 25, 50, 75, 100]
+        percentile_values = np.percentile(data_array, percentiles)
+
+        return {
+            "min": float(percentile_values[0]),
+            "25%": float(percentile_values[1]),
+            "50%": float(percentile_values[2]),  # Same as median
+            "75%": float(percentile_values[3]),
+            "max": float(percentile_values[4]),
+            "count": len(data_array)
+        }
+
+    except Exception as e:
+        logger.error(f"Error calculating distribution statistics: {str(e)}")
+        return {
+            "min": None,
+            "25%": None,
+            "50%": None,
+            "75%": None,
+            "max": None,
+            "count": 0
+        }

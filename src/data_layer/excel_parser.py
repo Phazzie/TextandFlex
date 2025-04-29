@@ -55,9 +55,8 @@ class ExcelParser:
             column_mapping: Dictionary mapping standard column names to file column names
             auto_map_columns: Whether to attempt automatic column mapping
             validate_data: Whether to validate data values after parsing
-        """
-        # Make required columns more flexible
-        self.required_columns = required_columns or []
+        """        # Use core required columns by default
+        self.required_columns = required_columns or ['timestamp', 'phone_number', 'message_type']
         self.date_format = date_format
         self.valid_message_types = valid_message_types or ['sent', 'received']
         self.column_mapping = column_mapping or {}
@@ -198,11 +197,68 @@ class ExcelParser:
         # Create a copy to avoid modifying the original
         result = df.copy()
 
+        # Check if this is the Excel-specific format (Date and Time columns)
+        excel_format = all(field in result.columns for field in ['Date', 'Time', 'To/From', 'Message Type'])
+
+        if excel_format:
+            # Handle Excel-specific format
+            return self._handle_excel_specific_format(result)
+
+        # Standard format processing
         # Normalize phone numbers
         result = normalize_phone_numbers(result)
 
         # Standardize timestamps
         result = standardize_timestamps(result, self.date_format)
+
+        # Normalize message types
+        result = normalize_message_types(result)
+
+        return result
+
+    def _handle_excel_specific_format(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Handle the Excel-specific format with Date and Time columns.
+
+        Args:
+            df: DataFrame with Excel-specific format
+
+        Returns:
+            Processed DataFrame with standard columns
+        """
+        # Create a copy to avoid modifying the original
+        result = df.copy()
+
+        # Create timestamp column by combining Date and Time
+        try:
+            # Convert Date and Time to proper format
+            result['timestamp'] = result.apply(
+                lambda row: pd.to_datetime(
+                    f"{row['Date']} {row['Time']}",
+                    format="%m/%d/%Y %I:%M %p"
+                ),
+                axis=1
+            )
+        except Exception as e:
+            logger.warning(f"Failed to create timestamp from Date and Time: {str(e)}")
+            # Fallback: keep Date and Time as separate columns
+            result['date'] = result['Date']
+            result['time'] = result['Time']
+
+        # Map columns to standard names
+        column_mapping = {
+            'Line': 'line',
+            'Date': 'date',
+            'Time': 'time',
+            'Direction': 'direction',
+            'To/From': 'phone_number',
+            'Message Type': 'message_type'
+        }
+
+        # Rename columns
+        result = result.rename(columns=column_mapping)
+
+        # Normalize phone numbers
+        result = normalize_phone_numbers(result)
 
         # Normalize message types
         result = normalize_message_types(result)

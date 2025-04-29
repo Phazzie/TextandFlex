@@ -1,0 +1,26 @@
+warning: in the working copy of 'changelog.md', LF will be replaced by CRLF the next time Git touches it
+M	TextyMcTextface
+M	changelog.md
+D	implementation_roadmap_phase1.md
+D	implementation_roadmap_phase2.md
+D	implementation_roadmap_phase3.md
+M	phone_analyzer
+D	simplified_roadmap_phase1.md
+M	src/analysis_layer/contact_analysis.py
+M	src/analysis_layer/insight_generator.py
+M	src/analysis_layer/ml_models.py
+M	src/analysis_layer/pattern_detector.py
+M	src/analysis_layer/statistical_utils.py
+M	src/analysis_layer/time_analysis.py
+M	src/config.py
+M	src/data_layer/excel_parser.py
+M	src/data_layer/models.py
+M	src/data_layer/repository.py
+M	src/data_layer/validation_schema.py
+M	src/presentation_layer/gui/models/file_model.py
+M	src/presentation_layer/gui/utils/file_validator.py
+M	src/utils/validators.py
+M	tests/utils/test_data_cleaner.py
+M	tests/utils/test_file_controller.py
+M	tests/utils/test_file_model.py
+M	tests/utils/test_validators.py

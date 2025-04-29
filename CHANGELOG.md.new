@@ -1,0 +1,76 @@
+# Changelog
+
+## [Unreleased]
+
+## [2025-05-09] Phone Records Converter Error Handling Improvements
+
+### Added
+
+- Added comprehensive error handling to the file converter
+- Added detailed logging throughout the conversion process
+- Added validation function to ensure converted files are compatible with the main application
+- Added metadata columns to converted files to track conversion information
+- Added automatic column creation for missing required fields
+
+### Changed
+
+- Enhanced phone number cleaning with better error handling
+- Improved date/time conversion with detailed error reporting
+- Enhanced batch processing with better error recovery
+- Updated output file format to ensure compatibility with the main application
+
+### Fixed
+
+- Fixed potential issues with missing columns in converted files
+- Fixed timestamp format issues that could cause loading problems
+- Improved error messages with specific row numbers for data issues
+- Added validation to prevent loading incompatible files into the main application
+
+## [2025-05-08] Phone Records File Converter Tool
+
+### Added
+
+- Created a new Phone Records File Converter tool to reformat Excel files for compatibility with TextandFlex
+- Implemented a modern, visually appealing GUI with PySide6/Qt
+- Added support for processing multiple files simultaneously
+- Implemented project root directory output option with checkbox toggle
+- Created custom application icon for better visual identity
+- Added colored status messages for better user feedback (success, warning, error)
+- Implemented multi-threading for responsive UI during file conversion
+- Added progress tracking with detailed status updates
+
+### Features
+
+- Column renaming to match expected format (To/From → phone_number, Message Type → message_type)
+- Phone number cleaning (removing formatting characters)
+- Date and Time column combination into proper timestamp format
+- Validation of required fields with detailed error reporting
+- Batch processing of multiple files with progress tracking
+- Option to save converted files to project root directory or custom location
+
+### Technical Details
+
+- Implemented using Test-Driven Development (TDD) approach
+- Created comprehensive test suite for core conversion logic
+- Used threading for background processing to keep UI responsive
+- Implemented proper error handling and validation
+- Created detailed documentation in PHONE_CONVERTER_README.md
+
+## [2025-04-22] Excel Format Compatibility Fix
+
+### Fixed
+
+- Fixed file loading validation to properly recognize required columns in Excel-specific format
+- Added support for both standard column names and Excel-specific column format
+- Improved error messaging when loading incompatible files
+
+## [2025-05-07] Enhanced Data Processing Robustness
+
+### Added
+
+- Added `safe_get_column` utility function to safely access DataFrame columns
+- Added `safe_get_value` utility function to safely access dictionary values
+- Added `combine_date_time` utility function to combine date and time columns
+- Added `detect_excel_format` and `map_excel_columns` utility functions
+- Added robust error handling for missing or invalid columns
+- Added test data generation script for Excel-specific format testing

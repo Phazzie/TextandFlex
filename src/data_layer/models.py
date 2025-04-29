@@ -204,6 +204,10 @@ class Message:
     timestamp: str
     phone_number: str
     message_type: str  # 'sent' or 'received'
+    line: Optional[str] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+    direction: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary.
@@ -211,11 +215,23 @@ class Message:
         Returns:
             Dictionary representation
         """
-        return {
+        result = {
             "timestamp": self.timestamp,
             "phone_number": self.phone_number,
             "message_type": self.message_type
         }
+
+        # Add optional fields if they exist
+        if self.line is not None:
+            result["line"] = self.line
+        if self.date is not None:
+            result["date"] = self.date
+        if self.time is not None:
+            result["time"] = self.time
+        if self.direction is not None:
+            result["direction"] = self.direction
+
+        return result
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Message':
@@ -230,7 +246,41 @@ class Message:
         return cls(
             timestamp=data.get("timestamp", ""),
             phone_number=data.get("phone_number", ""),
-            message_type=data.get("message_type", "")
+            message_type=data.get("message_type", ""),
+            line=data.get("line"),
+            date=data.get("date"),
+            time=data.get("time"),
+            direction=data.get("direction")
+        )
+
+    @classmethod
+    def from_excel_row(cls, row: Dict[str, Any]) -> 'Message':
+        """Create from Excel row with the specific format.
+
+        Args:
+            row: Dictionary containing Excel row data
+
+        Returns:
+            Message instance
+        """
+        # Handle the case where we have Date and Time columns
+        if 'Date' in row and 'Time' in row:
+            try:
+                timestamp = f"{row['Date']} {row['Time']}"
+            except Exception as e:
+                # Log the error and use an empty timestamp
+                timestamp = ""
+        else:
+            timestamp = row.get('timestamp', "")
+
+        return cls(
+            timestamp=timestamp,
+            phone_number=row.get('To/From', ""),
+            message_type=row.get('Message Type', ""),
+            line=row.get('Line'),
+            date=row.get('Date'),
+            time=row.get('Time'),
+            direction=row.get('Direction')
         )
 
 

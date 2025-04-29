@@ -1,0 +1,1 @@
+Integration test succeeded. See integration_test_results.txt for details.

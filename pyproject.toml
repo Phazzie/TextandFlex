@@ -1,0 +1,17 @@
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+  "E", "F", "W", "I", "B", "C90", "D", "A", "SIM", "PT", "T"
+]
+ignore = []
+
+[tool.ruff.lint.mccabe]
+max-complexity = 7
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"

@@ -6,11 +6,12 @@ Generate insights from patterns and analysis results.
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from collections import Counter
 
 from ..logger import get_logger
+from .ml_models import TimePatternModel, ContactPatternModel, AnomalyDetectionModel, extract_advanced_features
 
 logger = get_logger("insight_generator")
 
@@ -25,15 +26,24 @@ ERROR_OCCURRED_MSG = "Error occurred"
 class InsightGenerator:
     """Generator for insights from patterns and analysis results."""
 
-    def __init__(self):
-        """Initialize the insight generator."""
+    def __init__(self, pattern_detector=None):
+        """Initialize the insight generator.
+        
+        Args:
+            pattern_detector: Optional PatternDetector instance to use for ML-based insights
+        """
         self.last_error = None
+        self.pattern_detector = pattern_detector
+        self._insight_cache = {}
 
-    def generate_time_insights(self, time_results: Dict[str, Any]) -> List[str]:
+    def generate_time_insights(self, time_results: Dict[str, Any], df: Optional[pd.DataFrame] = None,
+                              column_mapping: Optional[Dict[str, str]] = None) -> List[str]:
         """Generate time-based insights from analysis results.
 
         Args:
             time_results: Dictionary of time analysis results
+            df: Optional DataFrame for generating ML-based insights
+            column_mapping: Optional column mapping for the DataFrame
 
         Returns:
             List of insight strings
@@ -45,85 +55,306 @@ class InsightGenerator:
             # Check if we have any data
             if not time_results:
                 return ["No specific time insights generated from the provided data."]
-
-            # Check for hourly distribution
-            if 'hourly_distribution' in time_results:
-                hourly_dist = time_results['hourly_distribution']
-                if not hourly_dist.empty:
-                    peak_hour = hourly_dist.idxmax()
-                    insights.append(f"Peak communication hour: {peak_hour}:00.")
-
-            # Check for daily distribution
-            if 'daily_distribution' in time_results:
-                daily_dist = time_results['daily_distribution']
-                if not daily_dist.empty:
-                    peak_day = daily_dist.idxmax()
-                    insights.append(f"Most active day: {peak_day}.")
-
-            # Check for anomalies
-            if 'anomalies' in time_results and time_results['anomalies']:
-                anomaly_count = len(time_results['anomalies'])
-                insights.append(f"Detected {anomaly_count} potential time anomalies.")
-
-            # If no insights were generated, add a default message
-            if not insights:
-                insights.append("No specific time insights generated from the provided data.")
-
+                
+            # Get base insights from time results
+            base_insights = self._get_base_time_insights(time_results)
+            insights.extend(base_insights)
+            
+            # If DataFrame is provided and pattern detector is available,
+            # generate ML-based insights
+            if df is not None and self.pattern_detector:
+                ml_insights = self._get_ml_time_insights(df, column_mapping)
+                insights.extend(ml_insights)
+            
             return insights
-
+            
         except Exception as e:
-            error_msg = f"Error generating time insights: {str(e)}"
-            logger.error(error_msg)
-            self.last_error = str(e)
-            return [TIME_INSIGHT_ERROR]
+            logger.error(f"{TIME_INSIGHT_ERROR}: {str(e)}")
+            self.last_error = f"{TIME_INSIGHT_ERROR}: {str(e)}"
+            return [f"{ERROR_OCCURRED_MSG} while generating time insights."]
+            
+    def _get_base_time_insights(self, time_results: Dict[str, Any]) -> List[str]:
+        """Get base time insights from the time results dictionary."""
+        insights = []
+        
+        # Check for hourly distribution
+        if 'hourly_distribution' in time_results:
+            hourly_dist = time_results['hourly_distribution']
+            if not hourly_dist.empty:
+                peak_hour = hourly_dist.idxmax()
+                insights.append(f"Peak communication hour: {peak_hour}:00.")
 
-    def generate_contact_insights(self, contact_results: Dict[str, Any]) -> List[str]:
+        # Check for daily distribution
+        if 'daily_distribution' in time_results:
+            daily_dist = time_results['daily_distribution']
+            if not daily_dist.empty:
+                peak_day = daily_dist.idxmax()
+                insights.append(f"Most active day: {peak_day}.")
+
+        # Check for anomalies
+        if 'anomalies' in time_results and time_results['anomalies']:
+            anomaly_count = len(time_results['anomalies'])
+            insights.append(f"Detected {anomaly_count} potential time anomalies.")
+
+        # If no insights were generated, add a default message
+        if not insights:
+            insights.append("No specific time insights generated from the provided data.")
+
+        return insights
+
+    def _get_ml_time_insights(self, df: pd.DataFrame, column_mapping: Optional[Dict[str, str]] = None) -> List[str]:
+        """Generate time insights using ML models."""
+        insights = []
+        
+        try:
+            # Ensure pattern detector has trained models
+            if not self.pattern_detector._models_trained:
+                self.pattern_detector._ensure_models_trained(df, column_mapping)
+                
+            if not self.pattern_detector._models_trained:
+                return []  # If models still not trained, return empty list
+                
+            # Extract features for prediction
+            features = extract_advanced_features(df, column_mapping)
+            
+            # Get time pattern predictions
+            time_predictions = self.pattern_detector.time_model.predict(features)
+            
+            # Get anomaly scores
+            anomaly_scores = self.pattern_detector.anomaly_model.predict(features)
+            
+            # Check if there are consistent time patterns
+            time_pattern_consistency = self._evaluate_time_pattern_consistency(time_predictions)
+            if time_pattern_consistency > 0.7:
+                insights.append(f"Strong consistent time patterns detected in communications (consistency: {time_pattern_consistency:.2f}).")
+            elif time_pattern_consistency > 0.4:
+                insights.append(f"Moderate time patterns detected in communications (consistency: {time_pattern_consistency:.2f}).")
+            
+            # Check for anomalous time patterns
+            anomaly_percentage = (anomaly_scores < 0).mean() * 100
+            if anomaly_percentage > 10:
+                insights.append(f"Detected {anomaly_percentage:.1f}% of communications with unusual timing patterns.")
+                
+            # Look for day/night pattern shifts
+            if 'is_business_hours' in features.columns:
+                business_hours_percentage = features['is_business_hours'].mean() * 100
+                if business_hours_percentage > 80:
+                    insights.append(f"Communications occur primarily during business hours ({business_hours_percentage:.1f}%).")
+                elif business_hours_percentage < 20:
+                    insights.append(f"Communications occur primarily outside business hours ({100-business_hours_percentage:.1f}%).")
+            
+            # Add version info to show the model's maturity
+            insights.append(f"Time insights generated using model version {self.pattern_detector.time_model.version}.")
+            
+            return insights
+            
+        except Exception as e:
+            logger.error(f"Error generating ML time insights: {e}")
+            return []
+            
+    def _evaluate_time_pattern_consistency(self, predictions: pd.Series) -> float:
+        """Evaluate the consistency of time pattern predictions."""
+        if len(predictions) < 3:
+            return 0.0
+            
+        # Calculate standard deviation of predictions
+        std = predictions.std()
+        # Normalize to a 0-1 scale where lower std means higher consistency
+        consistency = 1.0 / (1.0 + std)
+        return min(consistency, 1.0)
+        
+    def generate_contact_insights(self, contact_results: Dict[str, Any], df: Optional[pd.DataFrame] = None,
+                                column_mapping: Optional[Dict[str, str]] = None) -> List[str]:
         """Generate contact-based insights from analysis results.
 
         Args:
             contact_results: Dictionary of contact analysis results
+            df: Optional DataFrame for generating ML-based insights
+            column_mapping: Optional column mapping for the DataFrame
 
         Returns:
             List of insight strings
         """
         try:
-            # Initialize insights list
             insights = []
-
+            
             # Check if we have any data
             if not contact_results:
                 return ["No specific contact insights generated from the provided data."]
-
-            # Check for contact frequency
-            if 'contact_frequency' in contact_results:
-                freq_series = contact_results['contact_frequency']
-                if not freq_series.empty:
-                    most_frequent = freq_series.idxmax()
-                    insights.append(f"Most frequent contact: {most_frequent}.")
-
-            # Check for contact importance
-            if 'contact_importance' in contact_results:
-                importance_series = contact_results['contact_importance']
-                if not importance_series.empty:
-                    most_important = importance_series.idxmax()
-                    insights.append(f"Potentially most important contact (based on ranking): {most_important}.")
-
-            # Check for contact categories
-            if 'categories' in contact_results and contact_results['categories']:
-                category_count = len(contact_results['categories'])
-                insights.append(f"Contacts categorized into {category_count} groups.")
-
-            # If no insights were generated, add a default message
-            if not insights:
-                insights.append("No specific contact insights generated from the provided data.")
-
+                
+            # Get base insights from contact results
+            base_insights = self._get_base_contact_insights(contact_results)
+            insights.extend(base_insights)
+            
+            # If DataFrame is provided and pattern detector is available,
+            # generate ML-based insights
+            if df is not None and self.pattern_detector:
+                ml_insights = self._get_ml_contact_insights(df, column_mapping)
+                insights.extend(ml_insights)
+                
             return insights
-
+            
         except Exception as e:
-            error_msg = f"Error generating contact insights: {str(e)}"
-            logger.error(error_msg)
-            self.last_error = str(e)
-            return [CONTACT_INSIGHT_ERROR]
+            logger.error(f"{CONTACT_INSIGHT_ERROR}: {str(e)}")
+            self.last_error = f"{CONTACT_INSIGHT_ERROR}: {str(e)}"
+            return [f"{ERROR_OCCURRED_MSG} while generating contact insights."]
+            
+    def _get_base_contact_insights(self, contact_results: Dict[str, Any]) -> List[str]:
+        """Get base contact insights from the contact results dictionary."""
+        insights = []
+        
+        # Check for contact frequency
+        if 'contact_frequency' in contact_results:
+            freq_series = contact_results['contact_frequency']
+            if not freq_series.empty:
+                most_frequent = freq_series.idxmax()
+                insights.append(f"Most frequent contact: {most_frequent}.")
+
+        # Check for contact importance
+        if 'contact_importance' in contact_results:
+            importance_series = contact_results['contact_importance']
+            if not importance_series.empty:
+                most_important = importance_series.idxmax()
+                insights.append(f"Potentially most important contact (based on ranking): {most_important}.")
+
+        # Check for contact categories
+        if 'categories' in contact_results and contact_results['categories']:
+            category_count = len(contact_results['categories'])
+            insights.append(f"Contacts categorized into {category_count} groups.")
+
+        # If no insights were generated, add a default message
+        if not insights:
+            insights.append("No specific contact insights generated from the provided data.")
+
+        return insights
+
+    def _get_ml_contact_insights(self, df: pd.DataFrame, column_mapping: Optional[Dict[str, str]] = None) -> List[str]:
+        """Generate contact insights using ML models."""
+        insights = []
+        
+        try:
+            # Ensure pattern detector has trained models
+            if not self.pattern_detector._models_trained:
+                self.pattern_detector._ensure_models_trained(df, column_mapping)
+                
+            if not self.pattern_detector._models_trained:
+                return []  # If models still not trained, return empty list
+                
+            # Extract features for prediction
+            features = extract_advanced_features(df, column_mapping)
+            
+            # Get contact pattern predictions
+            contact_predictions = self.pattern_detector.contact_model.predict(features)
+            
+            # Get anomaly scores
+            anomaly_scores = self.pattern_detector.anomaly_model.predict(features)
+            
+            # Map column names
+            def get_col(std_name):
+                if column_mapping and std_name in column_mapping:
+                    return column_mapping[std_name]
+                return std_name
+                
+            phone_col = get_col('phone_number')
+            
+            # If we have a contact column
+            if phone_col in df.columns:
+                # Identify contacts with unusual patterns
+                df_with_scores = df.copy()
+                df_with_scores['anomaly_score'] = pd.Series(anomaly_scores, index=df.index)
+                
+                # Group by contact and get mean anomaly score
+                contact_anomalies = df_with_scores.groupby(phone_col)['anomaly_score'].mean()
+                
+                # Find contacts with highly anomalous patterns
+                anomalous_contacts = contact_anomalies[contact_anomalies < -0.5]
+                if not anomalous_contacts.empty:
+                    top_anomalous = anomalous_contacts.sort_values().head(3)
+                    contacts_str = ", ".join(top_anomalous.index.astype(str))
+                    insights.append(f"Unusual communication patterns detected with contacts: {contacts_str}")
+            
+                # Find contacts with most consistent patterns
+                if 'contact_frequency' in features.columns:
+                    high_freq_contacts = features.groupby(phone_col)['contact_frequency'].mean().nlargest(3)
+                    if not high_freq_contacts.empty:
+                        contacts_str = ", ".join(high_freq_contacts.index.astype(str))
+                        insights.append(f"Most frequent communication patterns with: {contacts_str}")
+                
+            # Add version info to show the model's maturity
+            insights.append(f"Contact insights generated using model version {self.pattern_detector.contact_model.version}.")
+            
+            return insights
+            
+        except Exception as e:
+            logger.error(f"Error generating ML contact insights: {e}")
+            return []
+            
+    def generate_anomaly_insights(self, df: pd.DataFrame, column_mapping: Optional[Dict[str, str]] = None) -> List[str]:
+        """Generate insights specifically about anomalies in the data.
+        
+        Args:
+            df: DataFrame containing the data
+            column_mapping: Optional column mapping
+            
+        Returns:
+            List of insight strings about anomalies
+        """
+        insights = []
+        
+        try:
+            # Ensure pattern detector has trained models
+            if not self.pattern_detector or not self.pattern_detector._models_trained:
+                if self.pattern_detector:
+                    self.pattern_detector._ensure_models_trained(df, column_mapping)
+                else:
+                    return ["Anomaly detection not available: Pattern detector not configured."]
+                    
+            if not self.pattern_detector._models_trained:
+                return ["Anomaly detection not available: Models could not be trained."]
+                
+            # Extract features for prediction
+            features = extract_advanced_features(df, column_mapping)
+            
+            # Get anomaly scores
+            anomaly_scores = self.pattern_detector.anomaly_model.predict(features)
+            
+            # Calculate percentage of anomalies
+            anomaly_percentage = (anomaly_scores < -0.5).mean() * 100
+            
+            # Generate insights based on anomaly percentage
+            if anomaly_percentage == 0:
+                insights.append("No significant anomalies detected in the communication patterns.")
+            elif anomaly_percentage < 5:
+                insights.append(f"Low level of anomalies detected ({anomaly_percentage:.1f}% of communications).")
+            elif anomaly_percentage < 15:
+                insights.append(f"Moderate level of anomalies detected ({anomaly_percentage:.1f}% of communications).")
+            else:
+                insights.append(f"High level of anomalies detected ({anomaly_percentage:.1f}% of communications).")
+                
+            # Find specific types of anomalies if present
+            if 'hour' in features.columns and 'is_weekend' in features.columns:
+                # Find late-night communication anomalies
+                late_night = features[(features['hour'] >= 22) | (features['hour'] <= 5)]
+                if len(late_night) > 0:
+                    late_night_anomalies = (anomaly_scores.loc[late_night.index] < -0.5).mean() * 100
+                    if late_night_anomalies > 20:
+                        insights.append(f"Unusual late-night communication patterns detected ({late_night_anomalies:.1f}% of late-night communications).")
+                
+                # Find weekend anomalies
+                weekend = features[features['is_weekend'] == 1]
+                if len(weekend) > 0:
+                    weekend_anomalies = (anomaly_scores.loc[weekend.index] < -0.5).mean() * 100
+                    if weekend_anomalies > 20:
+                        insights.append(f"Unusual weekend communication patterns detected ({weekend_anomalies:.1f}% of weekend communications).")
+            
+            # Add version info
+            insights.append(f"Anomaly insights generated using model version {self.pattern_detector.anomaly_model.version}.")
+            
+            return insights
+            
+        except Exception as e:
+            logger.error(f"Error generating anomaly insights: {e}")
+            return ["Error occurred while generating anomaly insights."]
 
     def generate_relationship_insights(self, relationship_results: Dict[str, Any]) -> List[str]:
         """Generate relationship insights from analysis results.

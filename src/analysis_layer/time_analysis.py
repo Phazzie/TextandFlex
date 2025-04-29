@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict, Counter
 
 from ..logger import get_logger
+from ..utils.data_utils import safe_get_column
 from .statistical_utils import (
     calculate_time_distribution,
     calculate_message_frequency,
@@ -42,10 +43,17 @@ class TimeAnalyzer:
             return cached
 
         try:
+            # Use safe_get_column to get the timestamp column
+            timestamp_col = safe_get_column(df, 'timestamp')
+
+            # Check if we got valid timestamps
+            if timestamp_col.isna().all():
+                return {'peak_hours': [], 'quiet_hours': [], 'hourly_distribution': {}}
+
             # Ensure timestamp is datetime
-            if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
-                df = df.copy()
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.copy()
+            if not pd.api.types.is_datetime64_any_dtype(timestamp_col):
+                df['timestamp'] = pd.to_datetime(timestamp_col)
 
             # Get hourly distribution
             hourly_dist = calculate_time_distribution(df, 'timestamp', 'hour')
@@ -91,10 +99,17 @@ class TimeAnalyzer:
             return cached
 
         try:
+            # Use safe_get_column to get the timestamp column
+            timestamp_col = safe_get_column(df, 'timestamp')
+
+            # Check if we got valid timestamps
+            if timestamp_col.isna().all():
+                return {'weekday_distribution': {}, 'weekend_vs_weekday': {}, 'busiest_days': []}
+
             # Ensure timestamp is datetime
-            if not pd.api.types.is_datetime64_any_dtype(df['timestamp']):
-                df = df.copy()
-                df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df = df.copy()
+            if not pd.api.types.is_datetime64_any_dtype(timestamp_col):
+                df['timestamp'] = pd.to_datetime(timestamp_col)
 
             # Get daily distribution
             daily_dist = calculate_time_distribution(df, 'timestamp', 'day')
